@@ -41,11 +41,12 @@ class AndroidGateModule : Module() {
         }
 
         Function("openUsageStatsSettings") {
-            val context = appContext.reactContext ?: return@Function
+            val context = appContext.reactContext ?: return@Function null
             val intent = Intent(Settings.ACTION_USAGE_ACCESS_SETTINGS).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             }
             context.startActivity(intent)
+            null
         }
 
         Function("hasOverlayPermission") {
@@ -58,7 +59,7 @@ class AndroidGateModule : Module() {
         }
 
         Function("openOverlaySettings") {
-            val context = appContext.reactContext ?: return@Function
+            val context = appContext.reactContext ?: return@Function null
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val intent = Intent(
                     Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -68,6 +69,7 @@ class AndroidGateModule : Module() {
                 }
                 context.startActivity(intent)
             }
+            null
         }
 
         Function("isIgnoringBatteryOptimizations") {
@@ -81,7 +83,7 @@ class AndroidGateModule : Module() {
         }
 
         Function("openBatteryOptimizationSettings") {
-            val context = appContext.reactContext ?: return@Function
+            val context = appContext.reactContext ?: return@Function null
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
                     data = Uri.parse("package:${context.packageName}")
@@ -96,6 +98,7 @@ class AndroidGateModule : Module() {
                     context.startActivity(fallback)
                 }
             }
+            null
         }
 
         Function("startDetectorService") {
