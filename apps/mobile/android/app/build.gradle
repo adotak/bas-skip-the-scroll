@@ -80,6 +80,17 @@ def enableProguardInReleaseBuilds = (findProperty('android.enableProguardInRelea
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
+tasks.named("generateAutolinkingPackageList").configure {
+    doLast {
+        def packageList = file("build/generated/autolinking/src/main/java/com/facebook/react/PackageList.java")
+        if (packageList.exists()) {
+            def contents = packageList.getText("UTF-8")
+                .replace("expo.core.ExpoModulesPackage", "expo.modules.ExpoModulesPackage")
+            packageList.setText(contents, "UTF-8")
+        }
+    }
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
 
