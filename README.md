@@ -22,3 +22,5 @@ The API can be run with:
 ```sh
 pnpm --filter @skip-the-scroll/api dev
 ```
+
+Set `EXPO_PUBLIC_API_URL` when running the mobile app against a non-emulator API.

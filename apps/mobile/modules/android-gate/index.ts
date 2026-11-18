@@ -4,6 +4,12 @@ export interface GateStats {
   gateShown: number;
   redirects: number;
   continueAnyway: number;
+  gateShownLast7Days: number;
+  redirectsLast7Days: number;
+  continueAnywayLast7Days: number;
+  gateShownLast30Days: number;
+  redirectsLast30Days: number;
+  continueAnywayLast30Days: number;
   basePauseDuration: number;
   targetAppsCount: number;
   isEnabled: boolean;
@@ -95,6 +101,12 @@ export const AndroidGate = {
       gateShown: 0,
       redirects: 0,
       continueAnyway: 0,
+      gateShownLast7Days: 0,
+      redirectsLast7Days: 0,
+      continueAnywayLast7Days: 0,
+      gateShownLast30Days: 0,
+      redirectsLast30Days: 0,
+      continueAnywayLast30Days: 0,
       basePauseDuration: 5,
       targetAppsCount: 6,
       isEnabled: false,

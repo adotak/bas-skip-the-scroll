@@ -8,6 +8,16 @@ const SAVED_CARDS_KEY = 'saved_cards_full';
 const LEGACY_SAVED_CARDS_KEY = 'saved_cards';
 const MAX_RECENT = 10;
 
+function parseStoredArray<T>(raw: string | null): T[] {
+  if (!raw) return [];
+  try {
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed as T[] : [];
+  } catch {
+    return [];
+  }
+}
+
 export interface SavedCardRecord {
   card: Card;
   savedAt: string;
@@ -29,7 +39,7 @@ export interface InsightsData {
 
 export async function getSessionLog(): Promise<SessionLogEntry[]> {
   const raw = await AsyncStorage.getItem(LOG_KEY);
-  return raw ? JSON.parse(raw) : [];
+  return parseStoredArray<SessionLogEntry>(raw);
 }
 
 export async function logSessionStart(params: {
@@ -65,7 +75,7 @@ export async function logSessionEnd(
 
 export async function getRecentIntents(): Promise<string[]> {
   const raw = await AsyncStorage.getItem(RECENT_KEY);
-  return raw ? JSON.parse(raw) : [];
+  return parseStoredArray<string>(raw);
 }
 
 export async function addRecentIntent(intent: string): Promise<void> {
@@ -82,7 +92,7 @@ export async function addRecentIntent(intent: string): Promise<void> {
 
 export async function getSavedCards(): Promise<SavedCardRecord[]> {
   const raw = await AsyncStorage.getItem(SAVED_CARDS_KEY);
-  return raw ? JSON.parse(raw) : [];
+  return parseStoredArray<SavedCardRecord>(raw);
 }
 
 export async function saveCard(card: Card, intent: string = 'General'): Promise<boolean> {
@@ -120,7 +130,7 @@ export async function isCardSaved(cardId: string): Promise<boolean> {
 export async function getSavedCardIds(): Promise<string[]> {
   const fullCards = await getSavedCards();
   const rawLegacyIds = await AsyncStorage.getItem(LEGACY_SAVED_CARDS_KEY);
-  const legacyIds: string[] = rawLegacyIds ? JSON.parse(rawLegacyIds) : [];
+  const legacyIds = parseStoredArray<string>(rawLegacyIds);
   return Array.from(new Set([
     ...fullCards.map((item) => item.card.id),
     ...legacyIds,
@@ -136,7 +146,7 @@ export async function toggleSavedCard(cardId: string): Promise<boolean> {
   }
 
   const rawLegacyIds = await AsyncStorage.getItem(LEGACY_SAVED_CARDS_KEY);
-  const legacyIds: string[] = rawLegacyIds ? JSON.parse(rawLegacyIds) : [];
+  const legacyIds = parseStoredArray<string>(rawLegacyIds);
   const legacyIndex = legacyIds.indexOf(cardId);
   if (legacyIndex >= 0) {
     legacyIds.splice(legacyIndex, 1);
@@ -171,9 +181,15 @@ export async function getInsightsData(days: number = 7): Promise<InsightsData> {
 
   // Native gate metrics
   const gateStats = AndroidGate.getGateStats();
-  const gateShown = gateStats.gateShown;
-  const gateRedirects = gateStats.redirects;
-  const continueAnyway = gateStats.continueAnyway;
+  const gateShown = days === 7
+    ? gateStats.gateShownLast7Days
+    : gateStats.gateShownLast30Days;
+  const gateRedirects = days === 7
+    ? gateStats.redirectsLast7Days
+    : gateStats.redirectsLast30Days;
+  const continueAnyway = days === 7
+    ? gateStats.continueAnywayLast7Days
+    : gateStats.continueAnywayLast30Days;
 
   // Estimated minutes saved:
   // Each gate redirect prevents an estimated ~15 min doomscroll session.

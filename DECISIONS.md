@@ -3,8 +3,6 @@
 > Every deviation from SPEC.md defaults, and every added dependency, gets a one-line reason here.
 > Format: `D<number> — <decision> — <reason>`
 
----
-
 ## Structural Decisions
 
 **D001 — English only for MVP** — One language done perfectly beats three done poorly. Multilingual is a later milestone after the core loop is validated. (Deviates from SPEC §3.8.)
@@ -24,6 +22,12 @@
 **D008 — Screen-Aware Polling (1000ms) & Battery Impact** — Service listens to `ACTION_SCREEN_OFF` to halt polling when device is sleeping. Polling takes ~0.2ms CPU time per check while screen is active. Measured battery impact is < 1.5% per 24 hours on mid-range Android test devices (Samsung Galaxy A/S series).
 
 **D009 — Samsung Battery Exemption Onboarding** — Added dedicated permission step requesting `ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` to counter aggressive background task killing on Samsung/OnePlus (PLAN §4).
+
+**D010 — Native gate metrics retain rolling 7/30-day events** — Adds timestamped local counters so insights remain window-specific instead of showing cumulative activity.
+
+**D011 — Configurable API CORS origin** — `CORS_ORIGIN` permits an explicit production origin while local development remains open by default.
+
+**D012 — JSON dogfood export uses the native share sheet** — Avoids a filesystem dependency while providing valid JSON and a shareable export title.
 
 ---
 

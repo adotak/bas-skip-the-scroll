@@ -104,4 +104,20 @@ describe('Insights calculation', () => {
     expect(parsed.sessionLog).toHaveLength(1);
     expect(parsed.savedCardsCount).toBe(1);
   });
+
+  test('supports a 30-day insights window', async () => {
+    await logSessionStart({
+      sessionId: 's-30',
+      intent: 'learn month-long topic',
+      mode: 'learn',
+      timeboxMin: 20,
+      cardCount: 7,
+    });
+    await logSessionEnd('s-30', 'done');
+
+    const insights = await getInsightsData(30);
+    expect(insights.timeWindowDays).toBe(30);
+    expect(insights.sessionsStarted).toBe(1);
+    expect(insights.doneRatePercent).toBe(100);
+  });
 });

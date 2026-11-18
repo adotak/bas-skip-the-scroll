@@ -52,6 +52,19 @@ describe('API routes', () => {
     expect((res.body as { error: string }).error).toContain('intent');
   });
 
+  test('POST /v1/sessions rejects overlong intent with 400', async () => {
+    const req = {
+      body: { intent: 'x'.repeat(501), mode: 'learn', timeboxMin: 10 },
+    } as Request;
+    const res = createMockResponse();
+
+    const handler = (sessionsRouter.stack.find((layer) => layer.route?.path === '/sessions')?.route?.stack[0] as { handle: Function })?.handle;
+    await handler(req, res);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect((res.body as { error: string }).error).toContain('500 characters');
+  });
+
   test('POST /v1/sessions returns session for valid intent', async () => {
     const req = {
       body: { intent: 'learn typescript', mode: 'learn', timeboxMin: 10 },

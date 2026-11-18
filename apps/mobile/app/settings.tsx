@@ -43,6 +43,7 @@ export default function SettingsScreen() {
     refreshPermissions();
     setSelectedApps(AndroidGate.getTargetApps());
     setPauseSeconds(AndroidGate.getPauseDuration());
+    setIsGateEnabled(AndroidGate.getGateStats().isEnabled);
   }, []);
 
   const refreshPermissions = () => {

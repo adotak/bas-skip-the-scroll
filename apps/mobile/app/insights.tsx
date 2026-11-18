@@ -34,7 +34,7 @@ export default function InsightsScreen() {
         title: 'SkipTheScroll_Stats_Export.json',
       });
     } catch {
-      Alert.alert('Export Ready', 'Dogfood statistics copied successfully.');
+      Alert.alert('Export Failed', 'Could not open the share sheet. Please try again.');
     }
   };
 

@@ -8,7 +8,8 @@ dotenv.config();
 
 export const app = express();
 
-app.use(cors());
+const allowedOrigin = process.env.CORS_ORIGIN?.trim();
+app.use(cors(allowedOrigin ? { origin: allowedOrigin } : undefined));
 app.use(express.json());
 
 // API v1 routes

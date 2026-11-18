@@ -294,6 +294,8 @@ flowchart TD
 
 **Accept when:** saved cards persist · insights are accurate for 7-day window · stats exportable as JSON.
 
+**Status:** ✅ Implemented in the app. 7-day and 30-day views are available, saved cards persist locally, and dogfood statistics export through the native share sheet.
+
 ---
 
 ## 6. Risks & Mitigations

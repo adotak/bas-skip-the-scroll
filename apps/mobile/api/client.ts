@@ -20,20 +20,23 @@ export async function fetchSessionFromApi(
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 7000); // 7s timeout
 
-    const response = await fetch(`${API_BASE_URL}/v1/sessions`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        intent: trimmed,
-        mode,
-        timeboxMin,
-      }),
-      signal: controller.signal,
-    });
-
-    clearTimeout(timeout);
+    let response: Response;
+    try {
+      response = await fetch(`${API_BASE_URL}/v1/sessions`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          intent: trimmed,
+          mode,
+          timeboxMin,
+        }),
+        signal: controller.signal,
+      });
+    } finally {
+      clearTimeout(timeout);
+    }
 
     if (response.ok) {
       const data = await response.json() as Session;

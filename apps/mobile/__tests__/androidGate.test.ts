@@ -21,6 +21,8 @@ describe('AndroidGate module wrapper', () => {
     expect(typeof stats.gateShown).toBe('number');
     expect(typeof stats.redirects).toBe('number');
     expect(typeof stats.continueAnyway).toBe('number');
+    expect(typeof stats.gateShownLast7Days).toBe('number');
+    expect(typeof stats.redirectsLast30Days).toBe('number');
   });
 
   test('isSupported returns boolean', () => {

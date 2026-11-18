@@ -19,6 +19,12 @@ sessionsRouter.post('/sessions', async (req: Request, res: Response) => {
     });
   }
 
+  if (intent.trim().length > 500) {
+    return res.status(400).json({
+      error: 'Invalid request: "intent" must be 500 characters or fewer.',
+    });
+  }
+
   const selectedMode: Mode = MODES.includes(mode as Mode)
     ? (mode as Mode)
     : 'learn';
