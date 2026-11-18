@@ -1,0 +1,12 @@
+{
+  "name": "skip-the-scroll",
+  "private": true,
+  "scripts": {
+    "mobile:start": "pnpm --filter @skip-the-scroll/mobile start",
+    "mobile:test": "pnpm --filter @skip-the-scroll/mobile test",
+    "typecheck": "pnpm -r run typecheck"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
