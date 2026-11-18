@@ -24,3 +24,13 @@ pnpm --filter @skip-the-scroll/api dev
 ```
 
 Set `EXPO_PUBLIC_API_URL` when running the mobile app against a non-emulator API.
+
+## Production build
+
+```sh
+pnpm api:build
+pnpm api:start
+pnpm typecheck
+pnpm mobile:test
+pnpm api:test
+```

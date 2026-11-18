@@ -29,6 +29,8 @@
 
 **D012 — JSON dogfood export uses the native share sheet** — Avoids a filesystem dependency while providing valid JSON and a shareable export title.
 
+**D013 — Shared types compile to CJS and API assets copy into dist** — Makes local production startup and serverless packaging reproducible instead of resolving workspace TypeScript source at runtime.
+
 ---
 
 ## Dependencies

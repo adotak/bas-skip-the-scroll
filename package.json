@@ -4,6 +4,10 @@
   "scripts": {
     "mobile:start": "pnpm --filter @skip-the-scroll/mobile start",
     "mobile:test": "pnpm --filter @skip-the-scroll/mobile test",
+    "api:dev": "pnpm --filter @skip-the-scroll/api dev",
+    "api:build": "pnpm --filter @skip-the-scroll/api build",
+    "api:start": "pnpm --filter @skip-the-scroll/api start",
+    "api:test": "pnpm --filter @skip-the-scroll/api test",
     "typecheck": "pnpm -r run typecheck"
   },
   "engines": {

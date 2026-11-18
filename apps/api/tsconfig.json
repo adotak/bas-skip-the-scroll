@@ -4,14 +4,12 @@
     "module": "CommonJS",
     "moduleResolution": "node",
     "outDir": "dist",
+    "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "paths": {
-      "@skip-the-scroll/shared": ["../../packages/shared/src"]
-    }
+    "forceConsistentCasingInFileNames": true
   },
-  "include": ["src/**/*", "api/**/*"],
+  "include": ["src/**/*"],
   "exclude": ["node_modules", "dist", "**/*.test.ts"]
 }

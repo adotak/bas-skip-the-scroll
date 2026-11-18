@@ -5,7 +5,7 @@
   "main": "api/index.ts",
   "scripts": {
     "dev": "ts-node src/server.ts",
-    "build": "tsc",
+    "build": "pnpm --filter @skip-the-scroll/shared build && tsc && node -e \"require('fs').cpSync('src/llm/prompts', 'dist/llm/prompts', { recursive: true })\"",
     "start": "node dist/server.js",
     "test": "jest --passWithNoTests",
     "typecheck": "tsc --noEmit"

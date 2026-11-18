@@ -6,7 +6,8 @@
     "start": "expo start",
     "android": "expo run:android",
     "test": "jest --passWithNoTests",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "ios": "expo run:ios"
   },
   "dependencies": {
     "expo": "~52.0.0",
