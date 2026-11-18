@@ -1,5 +1,5 @@
 {
-  "name": "skip-the-scroll",
+  "name": "bas-skip-the-scroll",
   "private": true,
   "scripts": {
     "mobile:start": "pnpm --filter @skip-the-scroll/mobile start",

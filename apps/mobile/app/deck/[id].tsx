@@ -7,7 +7,7 @@ import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
 import { CardView } from '@/components/CardView';
 import { Counter } from '@/components/Counter';
 import { getStoredSession } from '@/store/sessionStore';
-import { toggleSavedCard } from '@/store/storage';
+import { saveCard } from '@/store/storage';
 
 export default function DeckScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -16,9 +16,12 @@ export default function DeckScreen() {
   const pagerRef = useRef<PagerView>(null);
 
   const handleSave = useCallback(async (cardId: string) => {
-    await toggleSavedCard(cardId);
-    // M4: show toast / update icon
-  }, []);
+    if (!session) return;
+    const card = session.cards.find((c) => c.id === cardId);
+    if (card) {
+      await saveCard(card, session.intent);
+    }
+  }, [session]);
 
   // ── Error state ──────────────────────────────────────────────────────────
   if (!session) {

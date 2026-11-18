@@ -79,13 +79,29 @@ export default function IntentScreen() {
           {/* Header */}
           <View style={styles.topBar}>
             <Text style={styles.logo}>Skip the Scroll</Text>
-            <Pressable
-              onPress={() => router.push('/settings')}
-              style={styles.settingsBtn}
-              accessibilityLabel="Open settings"
-            >
-              <Text style={styles.settingsBtnText}>⚙</Text>
-            </Pressable>
+            <View style={styles.topBarActions}>
+              <Pressable
+                onPress={() => router.push('/library')}
+                style={styles.iconBtn}
+                accessibilityLabel="Open library"
+              >
+                <Text style={styles.iconBtnText}>📚</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push('/insights')}
+                style={styles.iconBtn}
+                accessibilityLabel="Open insights"
+              >
+                <Text style={styles.iconBtnText}>📊</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => router.push('/settings')}
+                style={styles.iconBtn}
+                accessibilityLabel="Open settings"
+              >
+                <Text style={styles.iconBtnText}>⚙</Text>
+              </Pressable>
+            </View>
           </View>
 
           {from ? (
@@ -200,13 +216,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
   },
-  settingsBtn: {
-    padding: Spacing.sm,
+  topBarActions: {
+    flexDirection: 'row',
+    gap: Spacing.xs,
     marginTop: Spacing.xl,
   },
-  settingsBtnText: {
-    fontSize: FontSize.xl,
-    color: Colors.textSecondary,
+  iconBtn: {
+    padding: Spacing.xs + 2,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
+  },
+  iconBtnText: {
+    fontSize: FontSize.lg,
   },
   fromBanner: {
     backgroundColor: Colors.surface,

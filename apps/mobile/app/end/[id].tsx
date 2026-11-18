@@ -5,7 +5,7 @@ import { useLocalSearchParams, router } from 'expo-router';
 import type { SessionOutcome } from '@skip-the-scroll/shared';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
 import { getStoredSession } from '@/store/sessionStore';
-import { logSessionEnd } from '@/store/storage';
+import { logSessionEnd, saveCard } from '@/store/storage';
 
 export default function EndScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -15,6 +15,13 @@ export default function EndScreen() {
     if (id) {
       await logSessionEnd(id, outcome);
     }
+
+    if (outcome === 'save' && session) {
+      for (const card of session.cards) {
+        await saveCard(card, session.intent);
+      }
+    }
+
     // Both Done and Refine go back to Intent.
     // Refine clears state so the user starts fresh.
     router.replace('/');

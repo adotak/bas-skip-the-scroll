@@ -43,6 +43,20 @@ export default function RootLayout() {
           }}
         />
         <Stack.Screen
+          name="library"
+          options={{
+            headerShown: false,
+            title: 'Saved Library',
+          }}
+        />
+        <Stack.Screen
+          name="insights"
+          options={{
+            headerShown: false,
+            title: 'Insights',
+          }}
+        />
+        <Stack.Screen
           name="gate"
           options={{
             headerShown: false,
