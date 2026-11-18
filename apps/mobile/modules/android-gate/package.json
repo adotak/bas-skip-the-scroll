@@ -1,0 +1,11 @@
+{
+  "name": "@skip-the-scroll/android-gate",
+  "version": "0.0.1",
+  "main": "index.ts",
+  "expo": {
+    "name": "@skip-the-scroll/android-gate",
+    "platforms": [
+      "android"
+    ]
+  }
+}
