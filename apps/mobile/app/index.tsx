@@ -17,7 +17,7 @@ import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
 import { ChipGroup } from '@/components/ChipGroup';
 import { addRecentIntent, getRecentIntents, logSessionStart } from '@/store/storage';
 import { storeSession } from '@/store/sessionStore';
-import { fetchSessionFromApi } from '@/api/client';
+import { fetchSessionFromApi, SessionFetchError } from '@/api/client';
 
 const MODE_LABELS: Record<Mode, string> = {
   learn: 'Learn',
@@ -33,6 +33,7 @@ export default function IntentScreen() {
   const [timeBox, setTimeBox] = useState<TimeBox>(10);
   const [recentIntents, setRecentIntents] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     getRecentIntents().then(setRecentIntents);
@@ -43,6 +44,7 @@ export default function IntentScreen() {
     if (!trimmed || isLoading) return;
 
     setIsLoading(true);
+    setErrorMessage(null);
     try {
       const session = await fetchSessionFromApi(trimmed, mode, timeBox);
       storeSession(session);
@@ -60,6 +62,12 @@ export default function IntentScreen() {
 
       router.push(`/deck/${session.id}`);
       setRecentIntents(await getRecentIntents());
+    } catch (err) {
+      if (err instanceof SessionFetchError) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage('Something went wrong. Please try again.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -144,6 +152,13 @@ export default function IntentScreen() {
             onSelect={setTimeBox}
             suffix="min"
           />
+
+          {errorMessage && (
+            <View style={styles.errorBox} accessibilityRole="alert">
+              <Text style={styles.errorTitle}>Could not create a deck</Text>
+              <Text style={styles.errorText}>{errorMessage}</Text>
+            </View>
+          )}
 
           {/* Recent intents */}
           {recentIntents.length > 0 && (
@@ -301,5 +316,24 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.sm,
+  },
+  errorBox: {
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.error,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    marginTop: Spacing.lg,
+  },
+  errorTitle: {
+    color: Colors.error,
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    marginBottom: Spacing.xs,
+  },
+  errorText: {
+    color: Colors.textSecondary,
+    fontSize: FontSize.sm,
+    lineHeight: FontSize.sm * 1.4,
   },
 });
