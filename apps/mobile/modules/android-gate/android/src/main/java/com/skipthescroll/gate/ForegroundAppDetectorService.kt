@@ -47,14 +47,22 @@ class ForegroundAppDetectorService : Service() {
             }
 
             val currentPkg = getForegroundPackage()
-            if (currentPkg != null && currentPkg != packageName && currentPkg != lastForegroundPackage) {
+            if (currentPkg != null && currentPkg != packageName) {
                 lastForegroundPackage = currentPkg
 
                 if (allowanceStore.isTargetApp(currentPkg)) {
-                    if (!allowanceStore.hasActiveAllowance(currentPkg)) {
+                    if (!allowanceStore.hasActiveAllowance(currentPkg) &&
+                        !GateOverlayService.isShowing) {
                         triggerGate(currentPkg)
                     }
                 }
+            } else if (currentPkg != null &&
+                currentPkg == lastForegroundPackage &&
+                allowanceStore.isTargetApp(currentPkg) &&
+                !allowanceStore.hasActiveAllowance(currentPkg) &&
+                !GateOverlayService.isShowing) {
+                // Re-check the active app so a completed allowance cannot bypass the gate.
+                triggerGate(currentPkg)
             }
 
             handler.postDelayed(this, POLL_INTERVAL_MS)
@@ -119,7 +127,11 @@ class ForegroundAppDetectorService : Service() {
             putExtra(GateOverlayService.EXTRA_TARGET_PACKAGE, packageName)
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
-        startService(intent)
+        try {
+            startService(intent)
+        } catch (_: SecurityException) {
+            // The overlay permission may have been revoked while the service was running.
+        }
     }
 
     private fun createNotificationChannel() {

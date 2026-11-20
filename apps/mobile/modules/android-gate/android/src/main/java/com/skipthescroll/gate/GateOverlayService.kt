@@ -26,6 +26,8 @@ class GateOverlayService : Service() {
 
     companion object {
         const val EXTRA_TARGET_PACKAGE = "target_package"
+        @Volatile
+        var isShowing: Boolean = false
     }
 
     override fun onCreate() {
@@ -43,12 +45,14 @@ class GateOverlayService : Service() {
     override fun onDestroy() {
         super.onDestroy()
         removeOverlay()
+        isShowing = false
     }
 
     override fun onBind(intent: Intent?): IBinder? = null
 
     private fun showOverlay(targetPackage: String) {
         removeOverlay()
+        isShowing = true
 
         val escalatedSeconds = allowanceStore.recordOpenAndGetEscalatedPause(targetPackage)
         val friendlyName = getAppName(targetPackage)
@@ -192,6 +196,7 @@ class GateOverlayService : Service() {
             }.start()
         } catch (e: Exception) {
             e.printStackTrace()
+            isShowing = false
             stopSelf()
         }
     }

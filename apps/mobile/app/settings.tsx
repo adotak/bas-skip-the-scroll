@@ -53,11 +53,21 @@ export default function SettingsScreen() {
   };
 
   const handleToggleGate = (enabled: boolean) => {
-    setIsGateEnabled(enabled);
     if (enabled) {
-      AndroidGate.startDetectorService();
+      const started = AndroidGate.startDetectorService();
+      if (!started) {
+        setIsGateEnabled(false);
+        Alert.alert(
+          'Permissions required',
+          'Grant Usage Access and Display over other apps before enabling the Pause Gate.',
+        );
+        refreshPermissions();
+        return;
+      }
+      setIsGateEnabled(true);
     } else {
       AndroidGate.stopDetectorService();
+      setIsGateEnabled(false);
     }
   };
 

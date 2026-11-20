@@ -103,16 +103,25 @@ class AndroidGateModule : Module() {
 
         Function("startDetectorService") {
             val context = appContext.reactContext ?: return@Function false
+            if (!hasRequiredPermissions(context)) {
+                return@Function false
+            }
+
             val store = AllowanceStore(context)
             store.isEnabled = true
 
             val serviceIntent = Intent(context, ForegroundAppDetectorService::class.java)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                context.startForegroundService(serviceIntent)
-            } else {
-                context.startService(serviceIntent)
+            return@Function try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    context.startForegroundService(serviceIntent)
+                } else {
+                    context.startService(serviceIntent)
+                }
+                true
+            } catch (_: SecurityException) {
+                store.isEnabled = false
+                false
             }
-            true
         }
 
         Function("stopDetectorService") {
@@ -166,5 +175,32 @@ class AndroidGateModule : Module() {
             val store = AllowanceStore(context)
             store.getStats()
         }
+    }
+
+    private fun hasRequiredPermissions(context: Context): Boolean {
+        val hasUsageAccess = run {
+            val appOps = context.getSystemService(Context.APP_OPS_SERVICE) as? AppOpsManager
+                ?: return@run false
+            val mode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                appOps.unsafeCheckOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    Process.myUid(),
+                    context.packageName
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                appOps.checkOpNoThrow(
+                    AppOpsManager.OPSTR_GET_USAGE_STATS,
+                    Process.myUid(),
+                    context.packageName
+                )
+            }
+            mode == AppOpsManager.MODE_ALLOWED
+        }
+
+        val hasOverlayAccess = Build.VERSION.SDK_INT < Build.VERSION_CODES.M ||
+            Settings.canDrawOverlays(context)
+
+        return hasUsageAccess && hasOverlayAccess
     }
 }
