@@ -20,6 +20,7 @@ export function CardView({ card, onSave }: CardViewProps) {
       style={styles.scroll}
       contentContainerStyle={styles.container}
       showsVerticalScrollIndicator={false}
+      nestedScrollEnabled
     >
       {/* Thumbnail */}
       {card.thumbnail ? (
