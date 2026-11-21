@@ -1,10 +1,10 @@
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import PagerView from 'react-native-pager-view';
 import { useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
 import { CardView } from '@/components/CardView';
+import ContentPager from '@/components/ContentPager';
 import { Counter } from '@/components/Counter';
 import { getStoredSession } from '@/store/sessionStore';
 import { saveCard } from '@/store/storage';
@@ -13,7 +13,6 @@ export default function DeckScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const session = getStoredSession(id ?? '');
   const [currentPage, setCurrentPage] = useState(0);
-  const pagerRef = useRef<PagerView>(null);
 
   const handleSave = useCallback(async (cardId: string) => {
     if (!session) return;
@@ -28,6 +27,27 @@ export default function DeckScreen() {
     return (
       <SafeAreaView style={styles.errorContainer}>
         <Text style={styles.errorText}>Session not found.</Text>
+        <Text style={styles.errorSubtitle}>
+          It may have expired or this link may be invalid.
+        </Text>
+        <Pressable style={styles.backButton} onPress={() => router.replace('/')}>
+          <Text style={styles.backButtonText}>Back to start</Text>
+        </Pressable>
+      </SafeAreaView>
+    );
+  }
+
+  if (!Array.isArray(session.cards) || session.cards.length === 0) {
+    return (
+      <SafeAreaView style={styles.errorContainer}>
+        <Text style={styles.emptyEmoji}>○</Text>
+        <Text style={styles.errorText}>No cards found.</Text>
+        <Text style={styles.errorSubtitle}>
+          Try a broader intent or choose a different mode.
+        </Text>
+        <Pressable style={styles.primaryEmptyButton} onPress={() => router.replace('/')}>
+          <Text style={styles.primaryEmptyButtonText}>Refine intent</Text>
+        </Pressable>
         <Pressable style={styles.backButton} onPress={() => router.replace('/')}>
           <Text style={styles.backButtonText}>Back to start</Text>
         </Pressable>
@@ -44,18 +64,17 @@ export default function DeckScreen() {
       <Counter current={currentPage + 1} total={totalCards} />
 
       {/* Horizontal pager — one card per screen */}
-      <PagerView
-        ref={pagerRef}
+      <ContentPager
         style={styles.pager}
         initialPage={0}
-        onPageSelected={(e) => setCurrentPage(e.nativeEvent.position)}
+        onPageSelected={setCurrentPage}
       >
         {session.cards.map((card) => (
           <View key={card.id} style={styles.page}>
             <CardView card={card} onSave={handleSave} />
           </View>
         ))}
-      </PagerView>
+      </ContentPager>
 
       {/* End-of-deck prompt — only visible on the last card */}
       {isLastCard && (
@@ -107,6 +126,30 @@ const styles = StyleSheet.create({
     color: Colors.error,
     fontSize: FontSize.lg,
     marginBottom: Spacing.lg,
+  },
+  emptyEmoji: {
+    color: Colors.accent,
+    fontSize: 56,
+    marginBottom: Spacing.sm,
+  },
+  errorSubtitle: {
+    color: Colors.textSecondary,
+    fontSize: FontSize.md,
+    textAlign: 'center',
+    marginBottom: Spacing.lg,
+  },
+  primaryEmptyButton: {
+    width: '100%',
+    backgroundColor: Colors.accent,
+    paddingVertical: Spacing.md,
+    borderRadius: Radius.md,
+    alignItems: 'center',
+    marginBottom: Spacing.sm,
+  },
+  primaryEmptyButtonText: {
+    color: Colors.bg,
+    fontSize: FontSize.md,
+    fontWeight: '700',
   },
   backButton: {
     borderWidth: 1,

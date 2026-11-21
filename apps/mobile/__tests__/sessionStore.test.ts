@@ -43,4 +43,16 @@ describe('sessionStore', () => {
     expect(getStoredSession(MOCK_SESSION.id)).toEqual(MOCK_SESSION);
     expect(getStoredSession(second.id)).toEqual(second);
   });
+
+  test('preserves an empty session defensively for an empty-state screen', () => {
+    const emptySession: Session = {
+      ...MOCK_SESSION,
+      id: 'test-empty-session',
+      cards: [],
+    };
+
+    storeSession(emptySession);
+
+    expect(getStoredSession(emptySession.id)?.cards).toEqual([]);
+  });
 });
