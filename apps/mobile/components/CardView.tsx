@@ -1,7 +1,19 @@
-import React from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, Image, Linking } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Pressable,
+  ScrollView,
+  Image,
+  Linking,
+  Modal,
+  SafeAreaView,
+} from 'react-native';
+import { WebView } from 'react-native-webview';
 import type { Card } from '@skip-the-scroll/shared';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
+import { getYouTubeEmbedUrl } from '@/components/youtube';
 
 const KIND_BADGES: Record<Card['kind'], string> = {
   video: '▶  Video',
@@ -15,13 +27,30 @@ interface CardViewProps {
 }
 
 export function CardView({ card, onSave }: CardViewProps) {
+  const [isPlayerOpen, setIsPlayerOpen] = useState(false);
+  const embedUrl = getYouTubeEmbedUrl(card);
+
+  const openCard = () => {
+    if (card.kind === 'video' && embedUrl) {
+      setIsPlayerOpen(true);
+      return;
+    }
+
+    if (card.url) {
+      Linking.openURL(card.url).catch((err) =>
+        console.warn('Failed to open URL:', err)
+      );
+    }
+  };
+
   return (
-    <ScrollView
-      style={styles.scroll}
-      contentContainerStyle={styles.container}
-      showsVerticalScrollIndicator={false}
-      nestedScrollEnabled
-    >
+    <>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+        nestedScrollEnabled
+      >
       {/* Thumbnail */}
       {card.thumbnail ? (
         <Image source={{ uri: card.thumbnail }} style={styles.thumbnail} />
@@ -65,16 +94,10 @@ export function CardView({ card, onSave }: CardViewProps) {
       <View style={styles.actions}>
         <Pressable
           style={styles.primaryAction}
-          onPress={() => {
-            if (card.url) {
-              Linking.openURL(card.url).catch((err) =>
-                console.warn('Failed to open URL:', err)
-              );
-            }
-          }}
+          onPress={openCard}
         >
           <Text style={styles.primaryActionText}>
-            {card.kind === 'video' ? '▶  Play' : '↗  Open'}
+            {card.kind === 'video' && embedUrl ? '▶  Play' : card.kind === 'video' ? '↗  Open in YouTube' : '↗  Open'}
           </Text>
         </Pressable>
 
@@ -87,7 +110,51 @@ export function CardView({ card, onSave }: CardViewProps) {
           </Pressable>
         )}
       </View>
-    </ScrollView>
+      </ScrollView>
+
+      {card.kind === 'video' && embedUrl && (
+        <Modal
+          visible={isPlayerOpen}
+          animationType="slide"
+          onRequestClose={() => setIsPlayerOpen(false)}
+        >
+          <SafeAreaView style={styles.playerContainer}>
+            <View style={styles.playerHeader}>
+              <Text style={styles.playerTitle} numberOfLines={1}>
+                {card.title}
+              </Text>
+              <Pressable
+                style={styles.closeButton}
+                onPress={() => setIsPlayerOpen(false)}
+                accessibilityRole="button"
+                accessibilityLabel="Close video player"
+              >
+                <Text style={styles.closeButtonText}>Close</Text>
+              </Pressable>
+            </View>
+            <WebView
+              source={{ uri: embedUrl }}
+              style={styles.player}
+              allowsFullscreenVideo
+              allowsInlineMediaPlayback
+              mediaPlaybackRequiresUserAction={false}
+              setSupportMultipleWindows={false}
+              onError={() => setIsPlayerOpen(false)}
+            />
+            <Pressable
+              style={styles.externalButton}
+              onPress={() => {
+                Linking.openURL(card.url).catch((err) =>
+                  console.warn('Failed to open YouTube URL:', err)
+                );
+              }}
+            >
+              <Text style={styles.externalButtonText}>Open in YouTube</Text>
+            </Pressable>
+          </SafeAreaView>
+        </Modal>
+      )}
+    </>
   );
 }
 
@@ -201,6 +268,49 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   secondaryActionText: {
+    color: Colors.text,
+    fontSize: FontSize.md,
+    fontWeight: '600',
+  },
+  playerContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  playerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm,
+  },
+  playerTitle: {
+    flex: 1,
+    color: Colors.text,
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
+  closeButton: {
+    marginLeft: Spacing.sm,
+    paddingHorizontal: Spacing.sm,
+    paddingVertical: Spacing.xs,
+  },
+  closeButtonText: {
+    color: Colors.accent,
+    fontSize: FontSize.md,
+    fontWeight: '700',
+  },
+  player: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  externalButton: {
+    margin: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  externalButtonText: {
     color: Colors.text,
     fontSize: FontSize.md,
     fontWeight: '600',

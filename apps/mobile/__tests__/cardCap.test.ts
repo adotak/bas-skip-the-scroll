@@ -1,5 +1,6 @@
 import { MAX_CARDS, DEFAULT_CARDS } from '@skip-the-scroll/shared';
 import { FIXTURE_SESSIONS, findFixtureSession } from '../fixtures/sessions';
+import { getYouTubeEmbedUrl } from '../components/youtube';
 
 describe('card cap enforcement', () => {
   test('MAX_CARDS is 10', () => {
@@ -65,6 +66,7 @@ describe('fixture data validity', () => {
         if (card.kind === 'video') {
           expect(card.embedId).toBeDefined();
           expect(card.embedId!.length).toBeGreaterThan(0);
+          expect(getYouTubeEmbedUrl(card)).toContain('youtube-nocookie.com/embed/');
         }
       }
     }
