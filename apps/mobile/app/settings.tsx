@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import {
   type Language,
 } from '@skip-the-scroll/shared';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
+import { FloatingMenuDock } from '@/components/FloatingMenuDock';
 import { AndroidGate } from '@/modules/android-gate';
 import { getPreferredLanguage, setPreferredLanguage } from '@/store/storage';
 
@@ -46,19 +47,19 @@ export default function SettingsScreen() {
   const [hasOverlay, setHasOverlay] = useState(false);
   const [hasBatteryExemption, setHasBatteryExemption] = useState(false);
 
+  const refreshPermissions = useCallback(() => {
+    setHasUsageAccess(AndroidGate.hasUsageStatsPermission());
+    setHasOverlay(AndroidGate.hasOverlayPermission());
+    setHasBatteryExemption(AndroidGate.isIgnoringBatteryOptimizations());
+  }, []);
+
   useEffect(() => {
     refreshPermissions();
     setSelectedApps(AndroidGate.getTargetApps());
     setPauseSeconds(AndroidGate.getPauseDuration());
     setIsGateEnabled(AndroidGate.getGateStats().isEnabled);
     getPreferredLanguage().then(setPreferredLangState);
-  }, []);
-
-  const refreshPermissions = () => {
-    setHasUsageAccess(AndroidGate.hasUsageStatsPermission());
-    setHasOverlay(AndroidGate.hasOverlayPermission());
-    setHasBatteryExemption(AndroidGate.isIgnoringBatteryOptimizations());
-  };
+  }, [refreshPermissions]);
 
   const handleToggleGate = (enabled: boolean) => {
     if (enabled) {
@@ -102,29 +103,37 @@ export default function SettingsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header */}
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Editorial Header */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Text style={styles.backBtnText}>← Back</Text>
           </Pressable>
-          <Text style={styles.title}>Gate Settings</Text>
+          <View>
+            <Text style={styles.eyebrow}>W.CONFIGURATION</Text>
+            <Text style={styles.title}>Gate Settings</Text>
+          </View>
         </View>
 
-        {/* Master Toggle */}
-        <View style={styles.card}>
+        {/* Master Toggle (.card-directory-sp dark card) */}
+        <View style={styles.darkCard}>
           <View style={styles.rowBetween}>
             <View style={styles.flex}>
-              <Text style={styles.cardTitle}>Pause Gate</Text>
-              <Text style={styles.cardSubtitle}>
+              <View style={styles.statusTag}>
+                <Text style={styles.statusTagText}>
+                  {isGateEnabled ? 'ACTIVE PROTECTION' : 'PAUSED'}
+                </Text>
+              </View>
+              <Text style={styles.darkCardTitle}>Pause Gate</Text>
+              <Text style={styles.darkCardSubtitle}>
                 Pause before target feed apps open to verify your intent.
               </Text>
             </View>
             <Switch
               value={isGateEnabled}
               onValueChange={handleToggleGate}
-              trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
-              thumbColor={Colors.text}
+              trackColor={{ false: Colors.surfaceDarkBorder, true: Colors.mint }}
+              thumbColor={Colors.textInverse}
             />
           </View>
         </View>
@@ -135,7 +144,7 @@ export default function SettingsScreen() {
           <Text style={styles.cardSubtitle}>
             Choose your default TL;DR summary language (Roman Urdu & Urdu queries are also auto-detected):
           </Text>
-          <View style={styles.chipsRow}>
+          <View style={styles.chipsContainer}>
             {LANGUAGES.map((l) => (
               <Pressable
                 key={l}
@@ -158,7 +167,7 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        {/* Permissions Onboarding / Status */}
+        {/* Permissions Onboarding / Status (.tb-dotteds) */}
         <Text style={styles.sectionTitle}>Android Permissions</Text>
         <View style={styles.card}>
           {/* Permission 1: Usage Access */}
@@ -179,7 +188,12 @@ export default function SettingsScreen() {
                 setTimeout(refreshPermissions, 1000);
               }}
             >
-              <Text style={styles.permButtonText}>
+              <Text
+                style={[
+                  styles.permButtonText,
+                  hasUsageAccess && styles.permButtonTextGranted,
+                ]}
+              >
                 {hasUsageAccess ? 'Granted ✓' : 'Grant'}
               </Text>
             </Pressable>
@@ -203,14 +217,19 @@ export default function SettingsScreen() {
                 setTimeout(refreshPermissions, 1000);
               }}
             >
-              <Text style={styles.permButtonText}>
+              <Text
+                style={[
+                  styles.permButtonText,
+                  hasOverlay && styles.permButtonTextGranted,
+                ]}
+              >
                 {hasOverlay ? 'Granted ✓' : 'Grant'}
               </Text>
             </Pressable>
           </View>
 
           {/* Permission 3: Samsung Battery Exemption */}
-          <View style={styles.permissionItem}>
+          <View style={[styles.permissionItem, { borderBottomWidth: 0 }]}>
             <View style={styles.flex}>
               <Text style={styles.permissionName}>Battery Optimization Exemption</Text>
               <Text style={styles.permissionDescription}>
@@ -227,7 +246,12 @@ export default function SettingsScreen() {
                 setTimeout(refreshPermissions, 1000);
               }}
             >
-              <Text style={styles.permButtonText}>
+              <Text
+                style={[
+                  styles.permButtonText,
+                  hasBatteryExemption && styles.permButtonTextGranted,
+                ]}
+              >
                 {hasBatteryExemption ? 'Granted ✓' : 'Grant'}
               </Text>
             </Pressable>
@@ -238,9 +262,9 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Breathing Pause Length</Text>
         <View style={styles.card}>
           <Text style={styles.cardSubtitle}>
-            How many seconds to pause and breathe before showing choices (escalates automatically 5s → 10s → 15s on repeated opens within an hour):
+            How many seconds to pause and breathe before showing choices (escalates 5s → 10s → 15s on repeated opens):
           </Text>
-          <View style={styles.chipsRow}>
+          <View style={styles.chipsContainer}>
             {PAUSE_OPTIONS.map((sec) => (
               <Pressable
                 key={sec}
@@ -277,8 +301,8 @@ export default function SettingsScreen() {
                 <Switch
                   value={isSelected}
                   onValueChange={() => toggleApp(app.packageName)}
-                  trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
-                  thumbColor={Colors.text}
+                  trackColor={{ false: Colors.surfaceLight, true: Colors.surfaceDark }}
+                  thumbColor={Colors.textInverse}
                 />
               </View>
             );
@@ -293,6 +317,12 @@ export default function SettingsScreen() {
           <Text style={styles.previewBtnText}>▶  Preview Gate Screen</Text>
         </Pressable>
       </ScrollView>
+
+      <FloatingMenuDock
+        activeTab="settings"
+        ctaLabel="Preview Gate"
+        onCtaPress={() => router.push('/gate')}
+      />
     </SafeAreaView>
   );
 }
@@ -304,7 +334,7 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: 110,
   },
   header: {
     flexDirection: 'row',
@@ -315,36 +345,66 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.md,
   },
   backBtnText: {
-    color: Colors.accent,
-    fontSize: FontSize.md,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  eyebrow: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   title: {
     color: Colors.text,
     fontSize: FontSize.xl,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   sectionTitle: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontWeight: '700',
+    color: Colors.textMuted,
+    fontSize: FontSize.xs,
+    fontWeight: '800',
     textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
     marginTop: Spacing.lg,
     marginBottom: Spacing.sm,
   },
+  darkCard: {
+    backgroundColor: Colors.surfaceDark, // #222222
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
+  },
+  statusTag: {
+    alignSelf: 'flex-start',
+    backgroundColor: Colors.lemon,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
+    marginBottom: 6,
+  },
+  statusTagText: {
+    color: Colors.text,
+    fontSize: 9,
+    fontWeight: '900',
+    letterSpacing: 0.6,
+  },
+  darkCardTitle: {
+    color: Colors.textInverse,
+    fontSize: FontSize.lg,
+    fontWeight: '800',
+    marginBottom: 4,
+  },
+  darkCardSubtitle: {
+    color: '#A7A7A7',
+    fontSize: FontSize.sm,
+    lineHeight: FontSize.sm * 1.4,
+  },
   card: {
     backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
-  },
-  cardTitle: {
-    color: Colors.text,
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-    marginBottom: Spacing.xs,
   },
   cardSubtitle: {
     color: Colors.textSecondary,
@@ -364,88 +424,91 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.sm + 2,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderStyle: 'dotted',
     borderBottomColor: Colors.border,
   },
   permissionName: {
     color: Colors.text,
     fontSize: FontSize.md,
-    fontWeight: '600',
+    fontWeight: '700',
     marginBottom: 2,
   },
   permissionDescription: {
     color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    lineHeight: FontSize.sm * 1.3,
+    fontSize: FontSize.xs,
+    lineHeight: FontSize.xs * 1.35,
   },
   permButton: {
-    backgroundColor: Colors.accent,
-    paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.sm,
+    backgroundColor: Colors.surfaceDark,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: Radius.xs,
   },
   permButtonGranted: {
-    backgroundColor: Colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: Colors.accent,
+    backgroundColor: Colors.mint,
   },
   permButtonText: {
-    color: Colors.bg,
-    fontSize: FontSize.sm,
-    fontWeight: '700',
+    color: Colors.textInverse,
+    fontSize: FontSize.xs,
+    fontWeight: '800',
   },
-  chipsRow: {
+  permButtonTextGranted: {
+    color: Colors.text,
+  },
+  chipsContainer: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: 6,
     marginTop: Spacing.md,
+    backgroundColor: Colors.surfaceLight,
+    padding: 6,
+    borderRadius: Radius.sm,
   },
   pauseChip: {
     flex: 1,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.sm,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    height: 38,
+    borderRadius: 6,
     alignItems: 'center',
-    backgroundColor: Colors.surfaceLight,
+    justifyContent: 'center',
+    backgroundColor: Colors.bg,
   },
   pauseChipActive: {
-    borderColor: Colors.accent,
-    backgroundColor: Colors.accentDim,
+    backgroundColor: Colors.surfaceDark,
   },
   pauseChipText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: FontSize.xs,
+    fontWeight: '700',
   },
   pauseChipTextActive: {
-    color: Colors.accent,
-    fontWeight: '700',
+    color: Colors.textInverse,
   },
   appRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: Spacing.sm + 2,
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderStyle: 'dotted',
     borderBottomColor: Colors.border,
   },
   appName: {
     color: Colors.text,
     fontSize: FontSize.md,
-    fontWeight: '500',
+    fontWeight: '600',
   },
   previewBtn: {
-    borderWidth: 1,
-    borderColor: Colors.accent,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: Radius.sm,
+    height: 50,
     alignItems: 'center',
+    justifyContent: 'center',
     marginTop: Spacing.xl,
   },
   previewBtnText: {
-    color: Colors.accent,
+    color: Colors.textInverse,
     fontSize: FontSize.md,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

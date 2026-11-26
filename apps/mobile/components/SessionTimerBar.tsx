@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
 import type { TimeBox } from '@skip-the-scroll/shared';
@@ -9,7 +9,12 @@ interface SessionTimerBarProps {
   onElapsedChange?: (elapsedSeconds: number) => void;
 }
 
-export function SessionTimerBar({
+/**
+ * Modeled on UI.html `.marquee-top` (#222222 bar with solid `.budget-tag--solid--yellow`
+ * and `.budget-tag--solid--green` tags).
+ * Memoized so its 1-second tick stays self-contained and never triggers sibling re-renders.
+ */
+export const SessionTimerBar = memo(function SessionTimerBar({
   timeboxMin,
   totalCardMinutes,
   onElapsedChange,
@@ -39,115 +44,145 @@ export function SessionTimerBar({
 
   return (
     <View style={styles.wrapper}>
-      <View style={styles.row}>
-        <View style={styles.leftGroup}>
-          <View style={[styles.dot, isPaused ? styles.dotPaused : isTimeUp ? styles.dotWarning : styles.dotActive]} />
-          <Text style={styles.timerLabel}>
-            {isTimeUp
-              ? `Time-box complete (${timeboxMin}m)`
-              : `${formatted} left in ${timeboxMin}m box`}
-          </Text>
+      <View style={styles.barSurface}>
+        <View style={styles.row}>
+          <View style={styles.leftGroup}>
+            <View
+              style={[
+                styles.solidTag,
+                isPaused
+                  ? styles.solidTagPaused
+                  : isTimeUp
+                    ? styles.solidTagWarning
+                    : styles.solidTagActive,
+              ]}
+            >
+              <Text style={styles.solidTagText}>
+                {isPaused ? 'PAUSED' : isTimeUp ? 'TIME UP' : formatted}
+              </Text>
+            </View>
+            <Text style={styles.timerLabel}>
+              {isTimeUp
+                ? `${timeboxMin}m box finished`
+                : `left in ${timeboxMin}m time-box`}
+            </Text>
+          </View>
+
+          <View style={styles.rightGroup}>
+            <View style={styles.budgetTagOutline}>
+              <Text style={styles.budgetText}>~{totalCardMinutes}m deck</Text>
+            </View>
+            <Pressable
+              onPress={() => setIsPaused((p) => !p)}
+              style={styles.pauseBtn}
+              accessibilityRole="button"
+              accessibilityLabel={isPaused ? 'Resume timer' : 'Pause timer'}
+            >
+              <Text style={styles.pauseBtnText}>
+                {isPaused ? '▶ Resume' : '❚❚ Pause'}
+              </Text>
+            </Pressable>
+          </View>
         </View>
 
-        <View style={styles.rightGroup}>
-          <Text style={styles.budgetText}>
-            Deck: ~{totalCardMinutes}m read
-          </Text>
-          <Pressable
-            onPress={() => setIsPaused((p) => !p)}
-            style={styles.pauseBtn}
-            accessibilityRole="button"
-            accessibilityLabel={isPaused ? 'Resume timer' : 'Pause timer'}
-          >
-            <Text style={styles.pauseBtnText}>{isPaused ? '▶ Resume' : '❚❚ Pause'}</Text>
-          </Pressable>
+        {/* Bottom 3px progress track */}
+        <View style={styles.track}>
+          <View
+            style={[
+              styles.fill,
+              { width: `${Math.round(progressRatio * 100)}%` },
+              isTimeUp && styles.fillWarning,
+            ]}
+          />
         </View>
-      </View>
-
-      {/* Subtle progress bar */}
-      <View style={styles.track}>
-        <View
-          style={[
-            styles.fill,
-            { width: `${Math.round(progressRatio * 100)}%` },
-            isTimeUp && styles.fillWarning,
-          ]}
-        />
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   wrapper: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.xs,
-    paddingBottom: Spacing.xs,
+    paddingVertical: 4,
+  },
+  barSurface: {
+    backgroundColor: Colors.surfaceDark, // #222222 (.marquee-top)
+    borderRadius: Radius.sm,
+    overflow: 'hidden',
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 6,
+    paddingHorizontal: Spacing.sm + 4,
+    paddingVertical: 8,
   },
   leftGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
+    gap: 8,
   },
-  dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+  solidTag: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
   },
-  dotActive: {
-    backgroundColor: Colors.accent,
+  solidTagActive: {
+    backgroundColor: Colors.mint,        // --color-inspire: #AAEEC4
   },
-  dotPaused: {
-    backgroundColor: Colors.textMuted,
+  solidTagPaused: {
+    backgroundColor: Colors.lemon,       // --color-learn: #FFF083
   },
-  dotWarning: {
-    backgroundColor: Colors.warning,
+  solidTagWarning: {
+    backgroundColor: Colors.vermilion,   // --color-orange: #FA5D29
+  },
+  solidTagText: {
+    color: Colors.text,
+    fontSize: FontSize.xs,
+    fontWeight: '800',
   },
   timerLabel: {
-    color: Colors.textSecondary,
+    color: Colors.textInverse,
     fontSize: FontSize.xs,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   rightGroup: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: Spacing.sm,
+    gap: 6,
+  },
+  budgetTagOutline: {
+    borderWidth: 1,
+    borderColor: Colors.surfaceDarkBorder,
+    borderRadius: Radius.xs,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
   },
   budgetText: {
-    color: Colors.textMuted,
-    fontSize: FontSize.xs,
+    color: '#DEDEDE',
+    fontSize: 10,
+    fontWeight: '600',
   },
   pauseBtn: {
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.sm,
+    backgroundColor: Colors.surfaceDarkInner,
+    paddingHorizontal: 8,
     paddingVertical: 3,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    borderRadius: Radius.xs,
   },
   pauseBtnText: {
-    color: Colors.accent,
-    fontSize: FontSize.xs,
-    fontWeight: '600',
+    color: Colors.textInverse,
+    fontSize: 10,
+    fontWeight: '700',
   },
   track: {
     height: 3,
-    backgroundColor: Colors.surfaceLight,
-    borderRadius: Radius.pill,
-    overflow: 'hidden',
+    backgroundColor: Colors.surfaceDarkInner,
   },
   fill: {
     height: '100%',
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.pill,
+    backgroundColor: Colors.mint,
   },
   fillWarning: {
-    backgroundColor: Colors.warning,
+    backgroundColor: Colors.vermilion,
   },
 });

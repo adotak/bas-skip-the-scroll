@@ -6,12 +6,12 @@ import { Colors } from '@/constants/theme';
 export default function RootLayout() {
   return (
     <>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <Stack
         screenOptions={{
           headerStyle: { backgroundColor: Colors.bg },
           headerTintColor: Colors.text,
-          headerTitleStyle: { fontWeight: '600' },
+          headerTitleStyle: { fontWeight: '700' },
           contentStyle: { backgroundColor: Colors.bg },
           animation: 'slide_from_right',
         }}
@@ -24,7 +24,7 @@ export default function RootLayout() {
           name="deck/[id]"
           options={{
             title: '',
-            headerTransparent: true,
+            headerShown: false,
           }}
         />
         <Stack.Screen

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
 
@@ -14,7 +14,12 @@ interface ChipGroupProps<T extends string | number> {
   suffix?: string;
 }
 
-export function ChipGroup<T extends string | number>({
+/**
+ * Modeled after UI.html `.nav-filters__container` (line 285) and `.nav-filters__item` (line 317):
+ * - Container: `--nf-bg-1` (#EDEDED), padding 6px, border-radius 8px
+ * - Item: height 42px, padding-inline 20px, `--nf-bg-2` (#F8F8F8), active `#222222` with white text
+ */
+function ChipGroupInner<T extends string | number>({
   options,
   selected,
   onSelect,
@@ -23,7 +28,7 @@ export function ChipGroup<T extends string | number>({
   suffix,
 }: ChipGroupProps<T>) {
   return (
-    <View style={styles.row}>
+    <View style={styles.container}>
       {options.map((opt) => {
         const isActive = opt === selected;
         const baseLabel = labels?.[String(opt)] ?? String(opt);
@@ -42,6 +47,7 @@ export function ChipGroup<T extends string | number>({
             <Text style={[styles.chipText, isActive && styles.chipTextActive]}>
               {display}
             </Text>
+            {isActive && <View style={styles.activeDot} />}
           </Pressable>
         );
       })}
@@ -49,37 +55,48 @@ export function ChipGroup<T extends string | number>({
   );
 }
 
+export const ChipGroup = memo(ChipGroupInner) as typeof ChipGroupInner;
+
 const styles = StyleSheet.create({
-  row: {
+  container: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.sm,
+    gap: 6,
+    padding: 6,
+    backgroundColor: Colors.surfaceLight, // --nf-bg-1: #EDEDED
+    borderRadius: Radius.sm,              // --rounded-normal: 8px
   },
   chip: {
+    flex: 1,
+    minWidth: 74,
+    height: 40,
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 6,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surface,
+    borderRadius: Radius.sm,
+    backgroundColor: Colors.bg,           // --nf-bg-2: #F8F8F8
   },
   chipActive: {
-    borderColor: Colors.accent,
-    backgroundColor: Colors.accentDim,
+    backgroundColor: Colors.surfaceDark,  // #222222
   },
   chipIcon: {
     fontSize: FontSize.sm,
   },
   chipText: {
-    color: Colors.textSecondary,
+    color: Colors.text,
     fontSize: FontSize.sm,
     fontWeight: '600',
   },
   chipTextActive: {
-    color: Colors.accent,
+    color: Colors.textInverse,
     fontWeight: '700',
+  },
+  activeDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: Colors.lemon,        // --color-learn: #FFF083
   },
 });

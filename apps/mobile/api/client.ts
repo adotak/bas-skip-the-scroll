@@ -1,3 +1,4 @@
+import { Platform } from 'react-native';
 import type { Session, Mode, TimeBox, Language } from '@skip-the-scroll/shared';
 
 declare const process: {
@@ -6,7 +7,9 @@ declare const process: {
   };
 };
 
-const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || 'http://10.0.2.2:3000'; // 10.0.2.2 is Android emulator host loopback
+const DEFAULT_API_URL =
+  Platform.OS === 'android' ? 'http://10.0.2.2:3000' : 'http://localhost:3000';
+const API_BASE_URL = process.env.EXPO_PUBLIC_API_URL || DEFAULT_API_URL;
 
 export type SessionFetchErrorKind = 'offline' | 'server' | 'empty';
 

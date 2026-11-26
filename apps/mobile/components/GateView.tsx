@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
 
@@ -14,7 +14,11 @@ interface GateViewProps {
 
 const BREAK_PRESETS = [2, 5, 10] as const;
 
-export function GateView({
+/**
+ * Modeled after UI.html `.card-recommendation` (high-contrast #222222 editorial canvas,
+ * `.budget-tag--solid--yellow` / `--green` pills, `.button--white`, `.button--outline--white`).
+ */
+export const GateView = memo(function GateView({
   targetApp = 'Instagram',
   initialPauseSeconds = 5,
   escalationLevel = 1,
@@ -49,12 +53,12 @@ export function GateView({
     const loop = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
-          toValue: 1.18,
+          toValue: 1.16,
           duration: 2200,
           useNativeDriver: true,
         }),
         Animated.timing(pulseAnim, {
-          toValue: 0.95,
+          toValue: 0.96,
           duration: 2200,
           useNativeDriver: true,
         }),
@@ -66,9 +70,9 @@ export function GateView({
 
   const breathingCue = isPauseActive
     ? secondsLeft % 4 >= 2
-      ? 'Inhale slowly…'
-      : 'Exhale gently…'
-    : 'You are in control.';
+      ? 'INHALE SLOWLY…'
+      : 'EXHALE GENTLY…'
+    : 'YOU ARE IN CONTROL.';
 
   return (
     <View style={styles.container}>
@@ -76,7 +80,7 @@ export function GateView({
       <View style={styles.topRow}>
         <View style={styles.escalationBadge}>
           <Text style={styles.escalationText}>
-            Pause Tier {escalationLevel}/3 ({initialPauseSeconds}s)
+            PAUSE TIER 0{escalationLevel}/03 · {initialPauseSeconds}S
           </Text>
         </View>
         <Pressable
@@ -91,9 +95,9 @@ export function GateView({
 
       {showWhySheet && (
         <View style={styles.whyCard}>
-          <Text style={styles.whyCardTitle}>Friction, not imprisonment</Text>
+          <Text style={styles.whyCardTitle}>FRICTION, NOT IMPRISONMENT</Text>
           <Text style={styles.whyCardBody}>
-            You enabled the Pause Gate for {targetApp}. Research shows a 5-second breathing pause breaks autopilot muscle memory. We never read content inside your apps, and you can adjust or disable this anytime in Gate Settings.
+            You enabled the Pause Gate for {targetApp}. A short breathing pause breaks autopilot muscle memory. We never read content inside your apps, and you can adjust or disable this anytime in Settings.
           </Text>
         </View>
       )}
@@ -108,11 +112,13 @@ export function GateView({
             ]}
           />
           <View style={styles.orbCore}>
-            <Text style={styles.counter}>{isPauseActive ? secondsLeft : '✦'}</Text>
+            <Text style={styles.counter}>{isPauseActive ? secondsLeft : 'W.'}</Text>
           </View>
         </View>
 
-        <Text style={styles.breathingText}>{breathingCue}</Text>
+        <View style={styles.cuePill}>
+          <Text style={styles.breathingText}>{breathingCue}</Text>
+        </View>
 
         <Text style={styles.question}>
           What did you open {targetApp} for?
@@ -133,7 +139,7 @@ export function GateView({
               🔍  Look something up with intent
             </Text>
             <Text style={styles.primaryActionSub}>
-              Get a finite 5–10 card deck instead of an infinite feed
+              Get a finite 3–7 card deck instead of an infinite feed
             </Text>
           </Pressable>
 
@@ -192,7 +198,7 @@ export function GateView({
               onPress={onContinueAnyway}
             >
               <Text style={styles.confirmBypassText}>
-                Tap again to confirm opening {targetApp} (logged in Insights)
+                Tap again to confirm opening {targetApp} (counted in Insights)
               </Text>
             </Pressable>
           )}
@@ -200,12 +206,12 @@ export function GateView({
       )}
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.bg,
+    backgroundColor: Colors.surfaceDark, // #222222 editorial dark gate
     justifyContent: 'space-between',
     padding: Spacing.lg,
     paddingVertical: Spacing.xl,
@@ -216,44 +222,46 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   escalationBadge: {
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.sm + 2,
+    backgroundColor: Colors.surfaceDarkInner,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: Radius.pill,
+    borderRadius: Radius.xs,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.surfaceDarkBorder,
   },
   escalationText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xs,
-    fontWeight: '600',
+    color: Colors.lemon,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.6,
   },
   whyLinkBtn: {
     paddingVertical: 4,
     paddingHorizontal: Spacing.sm,
   },
   whyLinkText: {
-    color: Colors.accent,
+    color: '#DEDEDE',
     fontSize: FontSize.xs,
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
   whyCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceDarkInner,
+    borderRadius: Radius.sm,
     padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.borderAccent,
+    borderLeftWidth: 3,
+    borderLeftColor: Colors.mint,
     marginTop: Spacing.xs,
   },
   whyCardTitle: {
-    color: Colors.accent,
-    fontSize: FontSize.sm,
-    fontWeight: '700',
+    color: Colors.mint,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 0.8,
     marginBottom: 4,
   },
   whyCardBody: {
-    color: Colors.textSecondary,
+    color: '#DEDEDE',
     fontSize: FontSize.xs,
     lineHeight: FontSize.xs * 1.45,
   },
@@ -262,82 +270,87 @@ const styles = StyleSheet.create({
     marginVertical: Spacing.md,
   },
   orbOuterWrapper: {
-    width: 148,
-    height: 148,
+    width: 144,
+    height: 144,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.md,
   },
   orbGlow: {
     position: 'absolute',
-    width: 136,
-    height: 136,
-    borderRadius: 68,
-    backgroundColor: Colors.accentDim,
+    width: 134,
+    height: 134,
+    borderRadius: 67,
+    backgroundColor: 'rgba(170, 238, 196, 0.16)',
     borderWidth: 1.5,
-    borderColor: Colors.borderAccent,
+    borderColor: Colors.mint,
   },
   orbCore: {
-    width: 102,
-    height: 102,
-    borderRadius: 51,
-    backgroundColor: Colors.surface,
-    borderWidth: 2,
-    borderColor: Colors.accent,
+    width: 98,
+    height: 98,
+    borderRadius: 49,
+    backgroundColor: Colors.lemon, // #FFF083
     alignItems: 'center',
     justifyContent: 'center',
   },
   counter: {
-    color: Colors.accent,
-    fontSize: 44,
-    fontWeight: '800',
+    color: Colors.text,
+    fontSize: 40,
+    fontWeight: '900',
+    letterSpacing: -1,
+  },
+  cuePill: {
+    backgroundColor: Colors.surfaceDarkInner,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: Radius.xs,
+    marginBottom: Spacing.md,
   },
   breathingText: {
-    color: Colors.accent,
-    fontSize: FontSize.md,
-    fontWeight: '600',
-    marginBottom: Spacing.md,
-    letterSpacing: 0.4,
+    color: Colors.mint,
+    fontSize: 11,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   question: {
-    color: Colors.text,
-    fontSize: FontSize.xl,
-    fontWeight: '800',
+    color: Colors.textInverse,
+    fontSize: FontSize.xxl,
+    fontWeight: '900',
     textAlign: 'center',
-    lineHeight: FontSize.xl * 1.3,
+    lineHeight: FontSize.xxl * 1.2,
+    letterSpacing: -0.5,
   },
   pausePlaceholder: {
     alignItems: 'center',
     padding: Spacing.lg,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceDarkInner,
+    borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.surfaceDarkBorder,
   },
   pausePlaceholderText: {
-    color: Colors.textSecondary,
+    color: '#DEDEDE',
     fontSize: FontSize.sm,
-    fontStyle: 'italic',
   },
   actions: {
     width: '100%',
-    gap: Spacing.sm + 2,
+    gap: Spacing.sm,
   },
   primaryAction: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.mint, // #AAEEC4
     paddingVertical: Spacing.md,
     paddingHorizontal: Spacing.md,
-    borderRadius: Radius.md,
+    borderRadius: Radius.sm,
     alignItems: 'center',
   },
   primaryActionText: {
-    color: Colors.bg,
+    color: Colors.text,
     fontSize: FontSize.md,
     fontWeight: '800',
   },
   primaryActionSub: {
-    color: Colors.bg,
-    opacity: 0.8,
+    color: Colors.text,
+    opacity: 0.75,
     fontSize: FontSize.xs,
     marginTop: 2,
   },
@@ -345,50 +358,48 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.xs,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceDarkInner,
+    borderRadius: Radius.sm,
     padding: 6,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.surfaceDarkBorder,
   },
   breakPresetsRow: {
     flexDirection: 'row',
     gap: 4,
   },
   breakPresetChip: {
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: Spacing.sm,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.bgElevated,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
+    borderRadius: 6,
+    backgroundColor: Colors.surfaceDark,
   },
   breakPresetChipActive: {
-    backgroundColor: Colors.accentDim,
-    borderWidth: 1,
-    borderColor: Colors.accent,
+    backgroundColor: Colors.lemon,
   },
   breakPresetText: {
-    color: Colors.textSecondary,
+    color: '#DEDEDE',
     fontSize: FontSize.xs,
     fontWeight: '700',
   },
   breakPresetTextActive: {
-    color: Colors.accent,
+    color: Colors.text,
   },
   breakActionBtn: {
     flex: 1,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 8,
     alignItems: 'center',
   },
   secondaryAction: {
-    backgroundColor: Colors.surface,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: Colors.border,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
+    borderColor: '#FFFFFF',
+    paddingVertical: 14,
+    borderRadius: Radius.sm,
     alignItems: 'center',
   },
   secondaryActionText: {
-    color: Colors.text,
+    color: Colors.textInverse,
     fontSize: FontSize.sm,
     fontWeight: '700',
   },
@@ -403,18 +414,16 @@ const styles = StyleSheet.create({
     textDecorationLine: 'underline',
   },
   confirmBypassBtn: {
-    paddingVertical: Spacing.sm,
+    paddingVertical: 10,
     paddingHorizontal: Spacing.md,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.warningDim,
-    borderWidth: 1,
-    borderColor: Colors.warning,
+    borderRadius: Radius.xs,
+    backgroundColor: Colors.vermilion,
     alignItems: 'center',
     marginTop: 4,
   },
   confirmBypassText: {
-    color: Colors.warning,
+    color: Colors.textInverse,
     fontSize: FontSize.xs,
-    fontWeight: '700',
+    fontWeight: '800',
   },
 });

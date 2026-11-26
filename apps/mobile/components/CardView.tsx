@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import {
   View,
   Text,
@@ -41,7 +41,15 @@ interface CardViewProps {
   onTakeawayChange?: (cardId: string, checkedCount: number) => void;
 }
 
-export function CardView({
+/**
+ * Modeled directly on UI.html `.card-academy`, `.card-course`, `.box-score`, and `.box-featured`:
+ * - White rounded card (`--rounded-large: 16px`, `border: 1px solid #EDEDED`)
+ * - 16:9 media header with centered `.bt-play` circular white button (`rgba(255,255,255,0.88)`)
+ * - Solid Awwwards `.budget-tag--solid` pills (lemon `#FFF083`, mint `#AAEEC4`, sky `#B4D7F8`)
+ * - Structured `.c-boxes-score` (`SIGNAL` / `EST. TIME`) boxes
+ * - Dotted-divider interactive takeaway checklist with `.input-check` square boxes
+ */
+export const CardView = memo(function CardView({
   card,
   isSaved = false,
   onSave,
@@ -96,19 +104,16 @@ export function CardView({
     }
   };
 
-  const kindColor =
+  const kindSolidBg =
     card.kind === 'video'
-      ? Colors.videoAccent
+      ? Colors.lemon
       : card.kind === 'doc'
-        ? Colors.docAccent
-        : Colors.articleAccent;
+        ? Colors.sky
+        : Colors.mint;
 
-  const kindBg =
-    card.kind === 'video'
-      ? Colors.videoAccentDim
-      : card.kind === 'doc'
-        ? Colors.docAccentDim
-        : Colors.articleAccentDim;
+  const formattedScore = card.qualityScore
+    ? (card.qualityScore / 10).toFixed(1)
+    : '9.5';
 
   return (
     <>
@@ -118,187 +123,219 @@ export function CardView({
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
       >
-        <View style={styles.cardSurface}>
-          {/* Thumbnail */}
-          {card.thumbnail ? (
-            <Pressable onPress={openCard} style={styles.thumbnailWrapper}>
+        <View style={styles.cardAcademy}>
+          {/* Figure Rollover Media Header (.card-academy__figure) */}
+          <Pressable onPress={openCard} style={styles.figureRollover}>
+            {card.thumbnail ? (
               <Image source={{ uri: card.thumbnail }} style={styles.thumbnail} />
-              <View style={styles.durationOverlay}>
-                <Text style={styles.durationOverlayText}>{card.minutes} min</Text>
-              </View>
-            </Pressable>
-          ) : (
-            <View style={[styles.thumbnailPlaceholder, { borderColor: kindBg }]}>
-              <Text style={[styles.thumbnailPlaceholderText, { color: kindColor }]}>
-                {KIND_BADGES[card.kind]}
-              </Text>
-              <Text style={styles.thumbnailDurationText}>{card.minutes} min estimate</Text>
-            </View>
-          )}
-
-          {/* Meta Badge Row: Kind + Difficulty + Signal Match */}
-          <View style={styles.badgeRow}>
-            <View style={[styles.kindBadge, { backgroundColor: kindBg }]}>
-              <Text style={[styles.kindText, { color: kindColor }]}>
-                {KIND_BADGES[card.kind]}
-              </Text>
-            </View>
-
-            {card.difficulty && (
-              <View style={styles.difficultyBadge}>
-                <Text style={styles.difficultyText}>
-                  {DIFFICULTY_LABELS[card.difficulty]}
+            ) : (
+              <View style={[styles.thumbnailPlaceholder, { backgroundColor: Colors.surfaceDark }]}>
+                <Text style={styles.placeholderMonogram}>W.</Text>
+                <Text style={styles.thumbnailPlaceholderText}>
+                  {KIND_BADGES[card.kind]}
                 </Text>
               </View>
             )}
 
-            {card.qualityScore && (
-              <View style={styles.scoreBadge}>
-                <Text style={styles.scoreText}>✦ {card.qualityScore}% signal</Text>
+            {/* Top-left floating kind tag (.figure-rollover__fixed-left) */}
+            <View style={styles.figureTopLeft}>
+              <View style={[styles.budgetTagSolid, { backgroundColor: kindSolidBg }]}>
+                <Text style={styles.budgetTagSolidText}>{KIND_BADGES[card.kind]}</Text>
+              </View>
+              {card.difficulty && (
+                <View style={styles.budgetTagDark}>
+                  <Text style={styles.budgetTagDarkText}>
+                    {DIFFICULTY_LABELS[card.difficulty].toUpperCase()}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Center Play Button for Videos (.bt-play line 1863) */}
+            {card.kind === 'video' && (
+              <View style={styles.btPlayCenter}>
+                <View style={styles.btPlayCircle}>
+                  <Text style={styles.btPlayIcon}>▶</Text>
+                </View>
               </View>
             )}
-          </View>
 
-          {/* Title */}
-          <Text style={styles.title}>{card.title}</Text>
+            {/* Bottom-right duration tag (.card-academy__figure .bottom-right) */}
+            <View style={styles.figureBottomRight}>
+              <View style={styles.durationTag}>
+                <Text style={styles.durationTagText}>{card.minutes} MIN</Text>
+              </View>
+            </View>
+          </Pressable>
 
-          {/* Source + duration */}
-          <Text style={styles.meta}>
-            {card.source}  ·  {card.minutes} min
-          </Text>
+          {/* Card Content Body (.card-course__content) */}
+          <View style={styles.cardBody}>
+            {/* Top Row: Source Byline + Awwwards Box-Score Grid (.c-boxes-score) */}
+            <View style={styles.headerMetaRow}>
+              <View style={styles.bylineCol}>
+                <Text style={styles.bylineLabel}>SOURCE</Text>
+                <Text style={styles.meta}>
+                  {card.source}  ·  {card.minutes} min
+                </Text>
+              </View>
 
-          {/* Topic tags */}
-          {card.tags && card.tags.length > 0 && (
-            <View style={styles.tagsRow}>
-              {card.tags.map((tag) => (
-                <View key={tag} style={styles.tagPill}>
-                  <Text style={styles.tagText}>#{tag}</Text>
+              <View style={styles.boxesScore}>
+                <View style={styles.boxScoreLeft}>
+                  <Text style={styles.boxScoreTop}>SIGNAL</Text>
+                  <Text style={styles.boxScoreVal}>{formattedScore}</Text>
                 </View>
-              ))}
-            </View>
-          )}
-
-          {/* Interactive TL;DR Takeaways Checklist */}
-          <View style={styles.tldrBox}>
-            <View style={styles.tldrHeaderRow}>
-              <Text style={styles.tldrLabel}>TL;DR · Key Takeaways</Text>
-              <Text style={styles.tldrProgress}>
-                {checkedBullets.length}/3 mastered
-              </Text>
+                <View style={styles.boxScoreRight}>
+                  <Text style={styles.boxScoreTop}>TIME</Text>
+                  <Text style={styles.boxScoreVal}>{card.minutes}m</Text>
+                </View>
+              </View>
             </View>
 
-            {card.tldr.map((bullet, i) => {
-              const isChecked = checkedBullets.includes(i);
-              return (
-                <Pressable
-                  key={i}
-                  onPress={() => handleToggleBullet(i)}
-                  style={[styles.bulletRow, isChecked && styles.bulletRowChecked]}
-                  accessibilityRole="checkbox"
-                  accessibilityState={{ checked: isChecked }}
-                >
-                  <View style={[styles.checkbox, isChecked && styles.checkboxChecked]}>
-                    <Text style={styles.checkboxMark}>{isChecked ? '✓' : `${i + 1}`}</Text>
+            {/* Editorial Title (.card-course__title) */}
+            <Text style={styles.title}>{card.title}</Text>
+
+            {/* Pill Tags (.button--tag) */}
+            {card.tags && card.tags.length > 0 && (
+              <View style={styles.tagsRow}>
+                {card.tags.map((tag) => (
+                  <View key={tag} style={styles.buttonTag}>
+                    <Text style={styles.buttonTagText}>{tag}</Text>
                   </View>
-                  <Text style={[styles.bullet, isChecked && styles.bulletChecked]}>
-                    {bullet}
+                ))}
+              </View>
+            )}
+
+            {/* Interactive 3-Bullet TL;DR Checklist (.tb-dotteds & .input-check) */}
+            <View style={styles.tldrBox}>
+              <View style={styles.tldrHeaderRow}>
+                <Text style={styles.tldrLabel}>TL;DR · 3 KEY TAKEAWAYS</Text>
+                <View style={styles.tldrCountBadge}>
+                  <Text style={styles.tldrProgress}>
+                    {checkedBullets.length}/3 MASTERED
+                  </Text>
+                </View>
+              </View>
+
+              {card.tldr.map((bullet, i) => {
+                const isChecked = checkedBullets.includes(i);
+                return (
+                  <Pressable
+                    key={i}
+                    onPress={() => handleToggleBullet(i)}
+                    style={[styles.bulletRow, isChecked && styles.bulletRowChecked]}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isChecked }}
+                  >
+                    <View style={[styles.inputCheck, isChecked && styles.inputCheckActive]}>
+                      <Text
+                        style={[
+                          styles.inputCheckMark,
+                          isChecked && styles.inputCheckMarkActive,
+                        ]}
+                      >
+                        {isChecked ? '✓' : `0${i + 1}`}
+                      </Text>
+                    </View>
+                    <Text style={[styles.bullet, isChecked && styles.bulletChecked]}>
+                      {bullet}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Why This Matches (.box-featured--green line 10242) */}
+            <View style={styles.boxFeaturedGreen}>
+              <Text style={styles.boxFeaturedLabel}>WHY THIS MATCHES YOUR INTENT</Text>
+              <Text style={styles.whyText}>{card.why}</Text>
+            </View>
+
+            {/* Hands-on Micro-Action (.box-featured--warning line 10246) */}
+            {card.actionPrompt && (
+              <View style={styles.boxFeaturedYellow}>
+                <Text style={styles.boxFeaturedLabel}>⚡ HANDS-ON MICRO-ACTION</Text>
+                <Text style={styles.actionPromptText}>{card.actionPrompt}</Text>
+              </View>
+            )}
+
+            {/* Personal Note Drawer (.filter-box) */}
+            <View style={styles.noteSection}>
+              <Pressable
+                onPress={() => setIsNoteOpen((prev) => !prev)}
+                style={styles.noteToggleBtn}
+              >
+                <Text style={styles.noteToggleText}>
+                  {noteText.trim()
+                    ? `✎  Note: "${noteText.trim().slice(0, 38)}${noteText.trim().length > 38 ? '…' : ''}"`
+                    : '✎  Add a private takeaway note'}
+                </Text>
+                <Text style={styles.noteToggleChevron}>{isNoteOpen ? '−' : '+'}</Text>
+              </Pressable>
+
+              {isNoteOpen && (
+                <View style={styles.noteDrawer}>
+                  <TextInput
+                    style={styles.noteInput}
+                    placeholder="Write what you learned or how you'll apply this…"
+                    placeholderTextColor={Colors.textMuted}
+                    value={noteText}
+                    onChangeText={setNoteText}
+                    multiline
+                  />
+                  <View style={styles.noteFooter}>
+                    {noteSavedToast ? (
+                      <Text style={styles.noteSavedBadge}>✓ Saved on-device</Text>
+                    ) : (
+                      <Text style={styles.noteHint}>Private · Stored locally</Text>
+                    )}
+                    <Pressable onPress={handleSaveNote} style={styles.noteSaveBtn}>
+                      <Text style={styles.noteSaveBtnText}>Save Note</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              )}
+            </View>
+
+            {/* Card Footer Actions (.button & .button--outline) */}
+            <View style={styles.actions}>
+              <Pressable style={styles.primaryAction} onPress={openCard}>
+                <Text style={styles.primaryActionText}>
+                  {card.kind === 'video' && embedUrl
+                    ? '▶  Play Video'
+                    : card.kind === 'video'
+                      ? '↗  Open in YouTube'
+                      : '↗  Visit Source'}
+                </Text>
+              </Pressable>
+
+              {card.kind !== 'video' && (
+                <Pressable
+                  style={styles.readerAction}
+                  onPress={() => {
+                    setShowLiveWebInReader(false);
+                    setIsReaderOpen(true);
+                  }}
+                >
+                  <Text style={styles.readerActionText}>Focus View</Text>
+                </Pressable>
+              )}
+
+              {onSave && (
+                <Pressable
+                  style={[styles.secondaryAction, isSaved && styles.secondaryActionSaved]}
+                  onPress={() => onSave(card.id)}
+                >
+                  <Text
+                    style={[
+                      styles.secondaryActionText,
+                      isSaved && styles.secondaryActionTextSaved,
+                    ]}
+                  >
+                    {isSaved ? '★ Saved' : 'Collect'}
                   </Text>
                 </Pressable>
-              );
-            })}
-          </View>
-
-          {/* Why this card */}
-          <View style={styles.whyBox}>
-            <Text style={styles.whyLabel}>WHY THIS MATCHES YOUR INTENT</Text>
-            <Text style={styles.whyText}>{card.why}</Text>
-          </View>
-
-          {/* Hands-on Micro-Challenge / Action Prompt */}
-          {card.actionPrompt && (
-            <View style={styles.actionPromptBox}>
-              <Text style={styles.actionPromptLabel}>⚡ MICRO-ACTION</Text>
-              <Text style={styles.actionPromptText}>{card.actionPrompt}</Text>
+              )}
             </View>
-          )}
-
-          {/* Collapsible Personal Note / Reflection Drawer */}
-          <View style={styles.noteSection}>
-            <Pressable
-              onPress={() => setIsNoteOpen((prev) => !prev)}
-              style={styles.noteToggleBtn}
-            >
-              <Text style={styles.noteToggleText}>
-                {noteText.trim()
-                  ? `✎  Your Note: "${noteText.trim().slice(0, 36)}${noteText.trim().length > 36 ? '…' : ''}"`
-                  : '✎  Add a quick personal takeaway note'}
-              </Text>
-              <Text style={styles.noteToggleChevron}>{isNoteOpen ? '▲' : '▼'}</Text>
-            </Pressable>
-
-            {isNoteOpen && (
-              <View style={styles.noteDrawer}>
-                <TextInput
-                  style={styles.noteInput}
-                  placeholder="Write what you learned or how you'll use this…"
-                  placeholderTextColor={Colors.textMuted}
-                  value={noteText}
-                  onChangeText={setNoteText}
-                  multiline
-                />
-                <View style={styles.noteFooter}>
-                  {noteSavedToast ? (
-                    <Text style={styles.noteSavedBadge}>✓ Saved to on-device library</Text>
-                  ) : (
-                    <Text style={styles.noteHint}>Stored privately on your device</Text>
-                  )}
-                  <Pressable onPress={handleSaveNote} style={styles.noteSaveBtn}>
-                    <Text style={styles.noteSaveBtnText}>Save Note</Text>
-                  </Pressable>
-                </View>
-              </View>
-            )}
-          </View>
-
-          {/* Primary & Secondary Actions */}
-          <View style={styles.actions}>
-            <Pressable style={styles.primaryAction} onPress={openCard}>
-              <Text style={styles.primaryActionText}>
-                {card.kind === 'video' && embedUrl
-                  ? '▶  Play Video'
-                  : card.kind === 'video'
-                    ? '↗  Open in YouTube'
-                    : '↗  Open Source'}
-              </Text>
-            </Pressable>
-
-            {card.kind !== 'video' && (
-              <Pressable
-                style={styles.readerAction}
-                onPress={() => {
-                  setShowLiveWebInReader(false);
-                  setIsReaderOpen(true);
-                }}
-              >
-                <Text style={styles.readerActionText}>📖 Focus View</Text>
-              </Pressable>
-            )}
-
-            {onSave && (
-              <Pressable
-                style={[styles.secondaryAction, isSaved && styles.secondaryActionSaved]}
-                onPress={() => onSave(card.id)}
-              >
-                <Text
-                  style={[
-                    styles.secondaryActionText,
-                    isSaved && styles.secondaryActionTextSaved,
-                  ]}
-                >
-                  {isSaved ? '★ Saved' : '☆ Save'}
-                </Text>
-              </Pressable>
-            )}
           </View>
         </View>
       </ScrollView>
@@ -347,7 +384,7 @@ export function CardView({
         </Modal>
       )}
 
-      {/* Distraction-Free Focused Reader Modal for Articles & Docs */}
+      {/* Distraction-Free Focused Reader Modal */}
       <Modal
         visible={isReaderOpen}
         animationType="slide"
@@ -362,10 +399,10 @@ export function CardView({
               </Text>
             </View>
             <Pressable
-              style={styles.closeButton}
+              style={styles.closeButtonLight}
               onPress={() => setIsReaderOpen(false)}
             >
-              <Text style={styles.closeButtonText}>Done</Text>
+              <Text style={styles.closeButtonLightText}>Done</Text>
             </Pressable>
           </View>
 
@@ -380,7 +417,7 @@ export function CardView({
                   !showLiveWebInReader && styles.readerTabTextActive,
                 ]}
               >
-                ✦ Focused Digest
+                Editorial Digest
               </Text>
             </Pressable>
             <Pressable
@@ -393,7 +430,7 @@ export function CardView({
                   showLiveWebInReader && styles.readerTabTextActive,
                 ]}
               >
-                🌐 Embedded Source
+                Live Web Source
               </Text>
             </Pressable>
           </View>
@@ -409,19 +446,19 @@ export function CardView({
                 <Text style={styles.tldrLabel}>EXECUTIVE SUMMARY (3 KEY POINTS)</Text>
                 {card.tldr.map((bullet, idx) => (
                   <Text key={idx} style={styles.readerDigestBullet}>
-                    {idx + 1}. {bullet}
+                    0{idx + 1}. {bullet}
                   </Text>
                 ))}
               </View>
 
-              <View style={styles.whyBox}>
-                <Text style={styles.whyLabel}>RELEVANCE TO YOUR SESSION</Text>
+              <View style={styles.boxFeaturedGreen}>
+                <Text style={styles.boxFeaturedLabel}>RELEVANCE TO YOUR SESSION</Text>
                 <Text style={styles.whyText}>{card.why}</Text>
               </View>
 
               {card.actionPrompt && (
-                <View style={styles.actionPromptBox}>
-                  <Text style={styles.actionPromptLabel}>⚡ HANDS-ON APPLICATION</Text>
+                <View style={styles.boxFeaturedYellow}>
+                  <Text style={styles.boxFeaturedLabel}>⚡ HANDS-ON APPLICATION</Text>
                   <Text style={styles.actionPromptText}>{card.actionPrompt}</Text>
                 </View>
               )}
@@ -444,7 +481,7 @@ export function CardView({
       </Modal>
     </>
   );
-}
+});
 
 const styles = StyleSheet.create({
   scroll: {
@@ -452,116 +489,180 @@ const styles = StyleSheet.create({
   },
   container: {
     paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.sm,
-    paddingBottom: Spacing.xxl,
+    paddingTop: Spacing.xs,
+    paddingBottom: 110,
   },
-  cardSurface: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.lg,
-    padding: Spacing.lg,
+  cardAcademy: {
+    backgroundColor: Colors.surface, // #FFFFFF (.card-academy)
+    borderRadius: Radius.lg,         // --rounded-large: 16px
     borderWidth: 1,
     borderColor: Colors.border,
+    overflow: 'hidden',
   },
-  thumbnailWrapper: {
+  figureRollover: {
     position: 'relative',
-    marginBottom: Spacing.md,
+    width: '100%',
+    height: 175,
+    backgroundColor: Colors.surfaceDark,
   },
   thumbnail: {
     width: '100%',
-    height: 185,
-    borderRadius: Radius.md,
-    backgroundColor: Colors.bgElevated,
-  },
-  durationOverlay: {
-    position: 'absolute',
-    bottom: Spacing.sm,
-    right: Spacing.sm,
-    backgroundColor: 'rgba(7, 10, 15, 0.85)',
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: 4,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  durationOverlayText: {
-    color: Colors.text,
-    fontSize: FontSize.xs,
-    fontWeight: '700',
+    height: '100%',
   },
   thumbnailPlaceholder: {
     width: '100%',
-    height: 96,
-    borderRadius: Radius.md,
-    marginBottom: Spacing.md,
-    backgroundColor: Colors.bgElevated,
-    borderWidth: 1,
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 6,
+  },
+  placeholderMonogram: {
+    color: Colors.lemon,
+    fontSize: 32,
+    fontWeight: '900',
+    letterSpacing: -1,
   },
   thumbnailPlaceholderText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.lg,
-    fontWeight: '700',
-  },
-  thumbnailDurationText: {
-    color: Colors.textMuted,
-    fontSize: FontSize.xs,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    alignItems: 'center',
-    gap: Spacing.xs + 2,
-    marginBottom: Spacing.sm,
-  },
-  kindBadge: {
-    backgroundColor: Colors.surfaceLight,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: 4,
-    borderRadius: Radius.pill,
-  },
-  kindText: {
-    color: Colors.accent,
-    fontSize: FontSize.xs,
-    fontWeight: '700',
-  },
-  difficultyBadge: {
-    backgroundColor: Colors.surfaceLight,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: 4,
-    borderRadius: Radius.pill,
-    borderWidth: 1,
-    borderColor: Colors.border,
-  },
-  difficultyText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xs,
+    color: Colors.textInverse,
+    fontSize: FontSize.md,
     fontWeight: '600',
   },
-  scoreBadge: {
-    backgroundColor: Colors.accentDim,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: 4,
-    borderRadius: Radius.pill,
+  figureTopLeft: {
+    position: 'absolute',
+    top: 14,
+    left: 14,
+    flexDirection: 'row',
+    gap: 6,
   },
-  scoreText: {
-    color: Colors.accent,
-    fontSize: FontSize.xs,
+  budgetTagSolid: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radius.xs,
+  },
+  budgetTagSolidText: {
+    color: Colors.text,
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  budgetTagDark: {
+    backgroundColor: 'rgba(34, 34, 34, 0.85)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: Radius.xs,
+  },
+  budgetTagDarkText: {
+    color: Colors.textInverse,
+    fontSize: 10,
     fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  btPlayCenter: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btPlayCircle: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  btPlayIcon: {
+    color: Colors.text,
+    fontSize: 20,
+    marginLeft: 3,
+  },
+  figureBottomRight: {
+    position: 'absolute',
+    bottom: 14,
+    right: 14,
+  },
+  durationTag: {
+    backgroundColor: Colors.surface,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.xs,
+  },
+  durationTagText: {
+    color: Colors.text,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  cardBody: {
+    padding: Spacing.lg,
+  },
+  headerMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+    paddingBottom: Spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.borderSubtle,
+  },
+  bylineCol: {
+    flex: 1,
+    paddingRight: Spacing.sm,
+  },
+  bylineLabel: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+    marginBottom: 2,
+  },
+  meta: {
+    color: Colors.text,
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  boxesScore: {
+    flexDirection: 'row',
+  },
+  boxScoreLeft: {
+    borderWidth: 1,
+    borderColor: Colors.borderStrong,
+    borderTopLeftRadius: Radius.xs,
+    borderBottomLeftRadius: Radius.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignItems: 'center',
+  },
+  boxScoreRight: {
+    borderWidth: 1,
+    borderLeftWidth: 0,
+    borderColor: Colors.borderStrong,
+    borderTopRightRadius: Radius.xs,
+    borderBottomRightRadius: Radius.xs,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    alignItems: 'center',
+    backgroundColor: Colors.surfaceLight,
+  },
+  boxScoreTop: {
+    color: Colors.textSecondary,
+    fontSize: 9,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+  boxScoreVal: {
+    color: Colors.text,
+    fontSize: FontSize.sm,
+    fontWeight: '800',
   },
   title: {
     color: Colors.text,
     fontSize: FontSize.xl,
     fontWeight: '800',
-    marginBottom: Spacing.xs,
-    lineHeight: FontSize.xl * 1.28,
-  },
-  meta: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontWeight: '600',
     marginBottom: Spacing.sm,
+    lineHeight: FontSize.xl * 1.22,
+    letterSpacing: -0.4,
   },
   tagsRow: {
     flexDirection: 'row',
@@ -569,22 +670,21 @@ const styles = StyleSheet.create({
     gap: 6,
     marginBottom: Spacing.md,
   },
-  tagPill: {
-    backgroundColor: Colors.bgElevated,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 3,
-    borderRadius: Radius.xs,
+  buttonTag: {
     borderWidth: 1,
-    borderColor: Colors.borderSubtle,
+    borderColor: Colors.textMuted,
+    borderRadius: Radius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
   },
-  tagText: {
-    color: Colors.textMuted,
+  buttonTagText: {
+    color: Colors.text,
     fontSize: FontSize.xs,
-    fontWeight: '600',
+    fontWeight: '500',
   },
   tldrBox: {
-    backgroundColor: Colors.bgElevated,
-    borderRadius: Radius.md,
+    backgroundColor: Colors.bg, // #F8F8F8
+    borderRadius: Radius.sm,
     padding: Spacing.md,
     marginBottom: Spacing.md,
     borderWidth: 1,
@@ -595,100 +695,103 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: Spacing.sm,
+    paddingBottom: Spacing.xs,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
   },
   tldrLabel: {
-    color: Colors.accent,
+    color: Colors.text,
     fontSize: FontSize.xs,
     fontWeight: '800',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
+    letterSpacing: 0.8,
+  },
+  tldrCountBadge: {
+    backgroundColor: Colors.lemon,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: Radius.xs,
   },
   tldrProgress: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xs,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: 10,
+    fontWeight: '800',
   },
   bulletRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: Spacing.sm,
-    paddingVertical: 6,
-    paddingHorizontal: 6,
-    borderRadius: Radius.sm,
-    marginBottom: 4,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderStyle: 'dotted',
+    borderBottomColor: Colors.border,
   },
   bulletRowChecked: {
-    backgroundColor: Colors.accentDim,
+    backgroundColor: Colors.mintSoft,
+    paddingHorizontal: 6,
+    borderRadius: Radius.xs,
   },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+  inputCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: Radius.xs,
     borderWidth: 1.5,
-    borderColor: Colors.border,
+    borderColor: Colors.borderStrong,
     backgroundColor: Colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 2,
+    marginTop: 1,
   },
-  checkboxChecked: {
-    borderColor: Colors.accent,
-    backgroundColor: Colors.accent,
+  inputCheckActive: {
+    backgroundColor: Colors.surfaceDark,
+    borderColor: Colors.surfaceDark,
   },
-  checkboxMark: {
+  inputCheckMark: {
     color: Colors.text,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
+  },
+  inputCheckMarkActive: {
+    color: Colors.textInverse,
   },
   bullet: {
     flex: 1,
     color: Colors.text,
     fontSize: FontSize.md,
-    lineHeight: FontSize.md * 1.48,
+    lineHeight: FontSize.md * 1.45,
   },
   bulletChecked: {
-    color: Colors.accent,
+    fontWeight: '600',
   },
-  whyBox: {
+  boxFeaturedGreen: {
+    backgroundColor: Colors.mintSoft, // #E2F4E9 (.box-featured--green)
+    padding: Spacing.md,
+    borderRadius: Radius.sm,
+    marginBottom: Spacing.sm + 2,
+  },
+  boxFeaturedYellow: {
+    backgroundColor: Colors.lemonSoft, // #FFF9D0 (.box-featured--warning)
+    padding: Spacing.md,
+    borderRadius: Radius.sm,
+    marginBottom: Spacing.md,
     borderLeftWidth: 3,
-    borderLeftColor: Colors.accent,
-    backgroundColor: Colors.bgElevated,
-    padding: Spacing.sm + 4,
-    borderTopRightRadius: Radius.sm,
-    borderBottomRightRadius: Radius.sm,
-    marginBottom: Spacing.md,
+    borderLeftColor: Colors.surfaceDark,
   },
-  whyLabel: {
-    color: Colors.textMuted,
-    fontSize: 10,
-    fontWeight: '800',
-    letterSpacing: 0.8,
-    marginBottom: 3,
-  },
-  whyText: {
+  boxFeaturedLabel: {
     color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontStyle: 'italic',
-    lineHeight: FontSize.sm * 1.45,
-  },
-  actionPromptBox: {
-    backgroundColor: Colors.accentDim,
-    borderRadius: Radius.md,
-    padding: Spacing.sm + 4,
-    borderWidth: 1,
-    borderColor: Colors.borderAccent,
-    marginBottom: Spacing.md,
-  },
-  actionPromptLabel: {
-    color: Colors.accent,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
     letterSpacing: 0.8,
     marginBottom: 4,
   },
+  whyText: {
+    color: Colors.text,
+    fontSize: FontSize.sm,
+    lineHeight: FontSize.sm * 1.45,
+  },
   actionPromptText: {
     color: Colors.text,
     fontSize: FontSize.sm,
+    fontWeight: '600',
     lineHeight: FontSize.sm * 1.4,
   },
   noteSection: {
@@ -698,31 +801,32 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: Colors.bgElevated,
+    backgroundColor: Colors.bg,
     borderRadius: Radius.sm,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
+    paddingVertical: 10,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   noteToggleText: {
-    color: Colors.textSecondary,
+    color: Colors.text,
     fontSize: FontSize.sm,
     fontWeight: '500',
     flex: 1,
   },
   noteToggleChevron: {
-    color: Colors.textMuted,
-    fontSize: FontSize.xs,
+    color: Colors.text,
+    fontSize: FontSize.lg,
+    fontWeight: '700',
     marginLeft: Spacing.sm,
   },
   noteDrawer: {
-    marginTop: Spacing.xs,
-    backgroundColor: Colors.bgElevated,
+    marginTop: 4,
+    backgroundColor: Colors.bg,
     borderRadius: Radius.sm,
     padding: Spacing.sm + 2,
     borderWidth: 1,
-    borderColor: Colors.borderAccent,
+    borderColor: Colors.borderStrong,
   },
   noteInput: {
     color: Colors.text,
@@ -741,18 +845,18 @@ const styles = StyleSheet.create({
     fontSize: FontSize.xs,
   },
   noteSavedBadge: {
-    color: Colors.accent,
+    color: Colors.success,
     fontSize: FontSize.xs,
     fontWeight: '700',
   },
   noteSaveBtn: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.surfaceDark,
     paddingHorizontal: Spacing.md,
     paddingVertical: 6,
-    borderRadius: Radius.sm,
+    borderRadius: Radius.xs,
   },
   noteSaveBtnText: {
-    color: Colors.bg,
+    color: Colors.textInverse,
     fontSize: FontSize.xs,
     fontWeight: '700',
   },
@@ -762,44 +866,42 @@ const styles = StyleSheet.create({
   },
   primaryAction: {
     flex: 1,
-    backgroundColor: Colors.accent,
-    paddingVertical: Spacing.md,
-    borderRadius: Radius.md,
+    height: 48,
+    backgroundColor: Colors.surfaceDark, // .button (#222222)
+    borderRadius: Radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
   },
   primaryActionText: {
-    color: Colors.bg,
+    color: Colors.textInverse,
     fontSize: FontSize.sm,
-    fontWeight: '800',
+    fontWeight: '700',
   },
   readerAction: {
-    paddingVertical: Spacing.md,
+    height: 48,
     paddingHorizontal: Spacing.md,
-    borderRadius: Radius.md,
+    borderRadius: Radius.sm,
     backgroundColor: Colors.surfaceLight,
-    borderWidth: 1,
-    borderColor: Colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   readerActionText: {
     color: Colors.text,
     fontSize: FontSize.sm,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   secondaryAction: {
-    paddingVertical: Spacing.md,
+    height: 48,
     paddingHorizontal: Spacing.md,
-    borderRadius: Radius.md,
+    borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderStrong,
     alignItems: 'center',
     justifyContent: 'center',
   },
   secondaryActionSaved: {
-    borderColor: Colors.accent,
-    backgroundColor: Colors.accentDim,
+    backgroundColor: Colors.lemon,
+    borderColor: Colors.surfaceDark,
   },
   secondaryActionText: {
     color: Colors.text,
@@ -807,7 +909,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
   },
   secondaryActionTextSaved: {
-    color: Colors.accent,
+    color: Colors.text,
   },
   playerContainer: {
     flex: 1,
@@ -821,19 +923,31 @@ const styles = StyleSheet.create({
   },
   playerTitle: {
     flex: 1,
-    color: Colors.text,
+    color: Colors.textInverse,
     fontSize: FontSize.md,
     fontWeight: '700',
   },
   closeButton: {
     marginLeft: Spacing.sm,
-    paddingHorizontal: Spacing.sm + 4,
-    paddingVertical: Spacing.xs + 2,
-    backgroundColor: Colors.surfaceLight,
-    borderRadius: Radius.sm,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: Colors.surfaceDarkInner,
+    borderRadius: Radius.xs,
   },
   closeButtonText: {
-    color: Colors.accent,
+    color: Colors.textInverse,
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  closeButtonLight: {
+    marginLeft: Spacing.sm,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: Radius.xs,
+  },
+  closeButtonLightText: {
+    color: Colors.textInverse,
     fontSize: FontSize.sm,
     fontWeight: '700',
   },
@@ -844,13 +958,13 @@ const styles = StyleSheet.create({
   externalButton: {
     margin: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.md,
+    borderColor: Colors.surfaceDarkBorder,
+    borderRadius: Radius.sm,
     paddingVertical: Spacing.md,
     alignItems: 'center',
   },
   externalButtonText: {
-    color: Colors.text,
+    color: Colors.textInverse,
     fontSize: FontSize.md,
     fontWeight: '600',
   },
@@ -865,9 +979,10 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
+    backgroundColor: Colors.surface,
   },
   readerSourceLabel: {
-    color: Colors.accent,
+    color: Colors.textMuted,
     fontSize: FontSize.xs,
     fontWeight: '700',
     textTransform: 'uppercase',
@@ -875,35 +990,33 @@ const styles = StyleSheet.create({
   readerModalTitle: {
     color: Colors.text,
     fontSize: FontSize.md,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   readerModeTabs: {
     flexDirection: 'row',
-    padding: Spacing.sm,
+    padding: 6,
     marginHorizontal: Spacing.lg,
     marginVertical: Spacing.sm,
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    backgroundColor: Colors.surfaceLight,
+    borderRadius: Radius.sm,
   },
   readerTab: {
     flex: 1,
-    paddingVertical: Spacing.sm,
+    paddingVertical: 10,
     alignItems: 'center',
-    borderRadius: Radius.sm,
+    borderRadius: 6,
   },
   readerTabActive: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.surfaceDark,
   },
   readerTabText: {
-    color: Colors.textSecondary,
+    color: Colors.text,
     fontSize: FontSize.sm,
     fontWeight: '600',
   },
   readerTabTextActive: {
-    color: Colors.bg,
-    fontWeight: '800',
+    color: Colors.textInverse,
+    fontWeight: '700',
   },
   readerDigestScroll: {
     padding: Spacing.lg,
@@ -912,13 +1025,13 @@ const styles = StyleSheet.create({
   readerHeadline: {
     color: Colors.text,
     fontSize: FontSize.xxl,
-    fontWeight: '800',
-    lineHeight: FontSize.xxl * 1.25,
+    fontWeight: '900',
+    lineHeight: FontSize.xxl * 1.2,
   },
   readerMetaLine: {
     color: Colors.textSecondary,
     fontSize: FontSize.sm,
-    marginBottom: Spacing.sm,
+    marginBottom: Spacing.xs,
   },
   readerDigestBullet: {
     color: Colors.text,

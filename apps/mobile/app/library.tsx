@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
+import { FloatingMenuDock } from '@/components/FloatingMenuDock';
 import {
   getSavedCards,
   removeSavedCard,
@@ -56,28 +57,40 @@ export default function LibraryScreen() {
     loadCards();
   }, [loadCards]);
 
-  const handleRemove = async (cardId: string) => {
-    await removeSavedCard(cardId);
-    await loadCards();
-  };
+  const handleRemove = useCallback(
+    async (cardId: string) => {
+      await removeSavedCard(cardId);
+      await loadCards();
+    },
+    [loadCards]
+  );
 
-  const handleToggleCompleted = async (cardId: string) => {
-    await toggleSavedCardCompleted(cardId);
-    await loadCards();
-  };
+  const handleToggleCompleted = useCallback(
+    async (cardId: string) => {
+      await toggleSavedCardCompleted(cardId);
+      await loadCards();
+    },
+    [loadCards]
+  );
 
-  const handleToggleTakeaway = async (cardId: string, bulletIdx: number) => {
-    await toggleCardTakeaway(cardId, bulletIdx);
-    await loadCards();
-  };
+  const handleToggleTakeaway = useCallback(
+    async (cardId: string, bulletIdx: number) => {
+      await toggleCardTakeaway(cardId, bulletIdx);
+      await loadCards();
+    },
+    [loadCards]
+  );
 
-  const handleSaveInlineNote = async (cardId: string) => {
-    await saveCardNote(cardId, draftNote);
-    setEditingNoteCardId(null);
-    await loadCards();
-  };
+  const handleSaveInlineNote = useCallback(
+    async (cardId: string) => {
+      await saveCardNote(cardId, draftNote);
+      setEditingNoteCardId(null);
+      await loadCards();
+    },
+    [draftNote, loadCards]
+  );
 
-  const handleExportStudyGuide = async () => {
+  const handleExportStudyGuide = useCallback(async () => {
     try {
       const md = await exportStudyGuideMarkdown();
       await Share.share({
@@ -87,36 +100,47 @@ export default function LibraryScreen() {
     } catch {
       Alert.alert('Export Failed', 'Could not share your study guide.');
     }
-  };
+  }, []);
 
-  const filtered = savedRecords.filter((rec) => {
-    if (activeFilter === 'video' && rec.card.kind !== 'video') return false;
-    if (activeFilter === 'article' && rec.card.kind !== 'article') return false;
-    if (activeFilter === 'doc' && rec.card.kind !== 'doc') return false;
-    if (activeFilter === 'notes' && !rec.note) return false;
-    if (activeFilter === 'unreviewed' && rec.completed) return false;
+  const filtered = useMemo(() => {
+    return savedRecords.filter((rec) => {
+      if (activeFilter === 'video' && rec.card.kind !== 'video') return false;
+      if (activeFilter === 'article' && rec.card.kind !== 'article') return false;
+      if (activeFilter === 'doc' && rec.card.kind !== 'doc') return false;
+      if (activeFilter === 'notes' && !rec.note) return false;
+      if (activeFilter === 'unreviewed' && rec.completed) return false;
 
-    const q = searchQuery.toLowerCase().trim();
-    if (!q) return true;
-    return (
-      rec.card.title.toLowerCase().includes(q) ||
-      rec.card.source.toLowerCase().includes(q) ||
-      rec.intent.toLowerCase().includes(q) ||
-      (rec.note?.toLowerCase().includes(q) ?? false)
-    );
-  });
+      const q = searchQuery.toLowerCase().trim();
+      if (!q) return true;
+      return (
+        rec.card.title.toLowerCase().includes(q) ||
+        rec.card.source.toLowerCase().includes(q) ||
+        rec.intent.toLowerCase().includes(q) ||
+        (rec.note?.toLowerCase().includes(q) ?? false)
+      );
+    });
+  }, [savedRecords, activeFilter, searchQuery]);
 
-  const reviewedCount = savedRecords.filter((r) => r.completed).length;
-  const notesCount = savedRecords.filter((r) => !!r.note).length;
+  const reviewedCount = useMemo(
+    () => savedRecords.filter((r) => r.completed).length,
+    [savedRecords]
+  );
+  const notesCount = useMemo(
+    () => savedRecords.filter((r) => !!r.note).length,
+    [savedRecords]
+  );
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* Editorial Header (.c-heading & .head-toolbar) */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Text style={styles.backBtnText}>← Back</Text>
         </Pressable>
-        <Text style={styles.title}>Saved Library</Text>
+        <View style={{ flex: 1 }}>
+          <Text style={styles.eyebrow}>W.COLLECTIONS</Text>
+          <Text style={styles.title}>Saved Library</Text>
+        </View>
         {savedRecords.length > 0 && (
           <Pressable onPress={handleExportStudyGuide} style={styles.exportHeaderBtn}>
             <Text style={styles.exportHeaderText}>📤 Study Guide</Text>
@@ -124,25 +148,25 @@ export default function LibraryScreen() {
         )}
       </View>
 
-      {/* Summary Metrics Strip */}
+      {/* Box-Score Metrics Strip (.c-boxes-score) */}
       {savedRecords.length > 0 && (
         <View style={styles.statsStrip}>
-          <View style={styles.statPill}>
-            <Text style={styles.statValue}>{savedRecords.length}</Text>
-            <Text style={styles.statLabel}>Saved</Text>
+          <View style={styles.boxScore}>
+            <Text style={styles.boxScoreLabel}>COLLECTED</Text>
+            <Text style={styles.boxScoreValue}>{savedRecords.length}</Text>
           </View>
-          <View style={styles.statPill}>
-            <Text style={styles.statValue}>{reviewedCount}</Text>
-            <Text style={styles.statLabel}>Reviewed ✓</Text>
+          <View style={[styles.boxScore, { backgroundColor: Colors.mintSoft }]}>
+            <Text style={styles.boxScoreLabel}>REVIEWED ✓</Text>
+            <Text style={styles.boxScoreValue}>{reviewedCount}</Text>
           </View>
-          <View style={styles.statPill}>
-            <Text style={styles.statValue}>{notesCount}</Text>
-            <Text style={styles.statLabel}>With Notes ✎</Text>
+          <View style={[styles.boxScore, { backgroundColor: Colors.lemonSoft }]}>
+            <Text style={styles.boxScoreLabel}>WITH NOTES ✎</Text>
+            <Text style={styles.boxScoreValue}>{notesCount}</Text>
           </View>
         </View>
       )}
 
-      {/* Search Input & Filter Pills */}
+      {/* Search & Filter Container (.nav-filters__container) */}
       {savedRecords.length > 0 && (
         <View>
           <TextInput
@@ -198,20 +222,29 @@ export default function LibraryScreen() {
           data={filtered}
           keyExtractor={(item) => item.card.id}
           contentContainerStyle={styles.list}
+          initialNumToRender={6}
+          maxToRenderPerBatch={6}
+          windowSize={5}
           renderItem={({ item }) => {
             const { card, intent, note, completed, checkedBullets = [] } = item;
             const isEditingNote = editingNoteCardId === card.id;
+            const kindBg =
+              card.kind === 'video'
+                ? Colors.lemon
+                : card.kind === 'doc'
+                  ? Colors.sky
+                  : Colors.mint;
 
             return (
               <View style={[styles.cardItem, completed && styles.cardItemCompleted]}>
                 <View style={styles.cardHeader}>
-                  <View style={styles.kindBadge}>
+                  <View style={[styles.kindBadge, { backgroundColor: kindBg }]}>
                     <Text style={styles.kindText}>
                       {KIND_BADGES[card.kind] || card.kind}
                     </Text>
                   </View>
                   <Text style={styles.intentTag} numberOfLines={1}>
-                    From: {intent}
+                    Intent: {intent}
                   </Text>
                 </View>
 
@@ -220,7 +253,7 @@ export default function LibraryScreen() {
                   {card.source}  ·  {card.minutes} min
                 </Text>
 
-                {/* Interactive TL;DR Bullets */}
+                {/* Interactive TL;DR Bullets (.tb-dotteds) */}
                 <View style={styles.tldrContainer}>
                   {card.tldr.map((bullet, i) => {
                     const isChecked = checkedBullets.includes(i);
@@ -236,7 +269,7 @@ export default function LibraryScreen() {
                             isChecked && styles.bulletTextChecked,
                           ]}
                         >
-                          {isChecked ? '✓  ' : '•  '}
+                          {isChecked ? '✓  ' : `0${i + 1} · `}
                           {bullet}
                         </Text>
                       </Pressable>
@@ -279,7 +312,7 @@ export default function LibraryScreen() {
                     style={styles.notePreviewBox}
                   >
                     <Text style={styles.notePreviewText}>
-                      {note ? `✎  Note: ${note}` : '+ Add personal note'}
+                      {note ? `✎  Note: ${note}` : '+ Add personal takeaway note'}
                     </Text>
                   </Pressable>
                 )}
@@ -328,6 +361,12 @@ export default function LibraryScreen() {
           }}
         />
       )}
+
+      <FloatingMenuDock
+        activeTab="library"
+        ctaLabel={savedRecords.length > 0 ? 'Export .MD' : undefined}
+        onCtaPress={savedRecords.length > 0 ? handleExportStudyGuide : undefined}
+      />
     </SafeAreaView>
   );
 }
@@ -348,107 +387,109 @@ const styles = StyleSheet.create({
     paddingRight: Spacing.md,
   },
   backBtnText: {
-    color: Colors.accent,
-    fontSize: FontSize.md,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  eyebrow: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   title: {
     color: Colors.text,
     fontSize: FontSize.xl,
-    fontWeight: '800',
-    flex: 1,
+    fontWeight: '900',
+    letterSpacing: -0.5,
   },
   exportHeaderBtn: {
-    backgroundColor: Colors.accentDim,
-    borderWidth: 1,
-    borderColor: Colors.accent,
-    paddingHorizontal: Spacing.sm + 4,
-    paddingVertical: 6,
-    borderRadius: Radius.pill,
+    backgroundColor: Colors.surfaceDark,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: Radius.sm,
   },
   exportHeaderText: {
-    color: Colors.accent,
+    color: Colors.textInverse,
     fontSize: FontSize.xs,
     fontWeight: '700',
   },
   statsStrip: {
     flexDirection: 'row',
-    gap: Spacing.sm,
+    gap: Spacing.xs + 2,
     paddingHorizontal: Spacing.lg,
     marginBottom: Spacing.xs,
   },
-  statPill: {
+  boxScore: {
     flex: 1,
     backgroundColor: Colors.surface,
-    borderRadius: Radius.sm,
-    paddingVertical: Spacing.xs + 2,
-    paddingHorizontal: Spacing.sm,
+    borderRadius: Radius.xs,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
     borderWidth: 1,
-    borderColor: Colors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    borderColor: Colors.borderStrong,
   },
-  statValue: {
-    color: Colors.accent,
-    fontSize: FontSize.md,
-    fontWeight: '800',
-  },
-  statLabel: {
+  boxScoreLabel: {
     color: Colors.textSecondary,
-    fontSize: FontSize.xs,
-    fontWeight: '600',
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  boxScoreValue: {
+    color: Colors.text,
+    fontSize: FontSize.lg,
+    fontWeight: '900',
   },
   searchBar: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceLight, // #EDEDED (.search-form)
     color: Colors.text,
     marginHorizontal: Spacing.lg,
-    marginVertical: Spacing.xs + 2,
+    marginVertical: 6,
     paddingHorizontal: Spacing.md,
-    paddingVertical: Spacing.sm + 2,
-    borderRadius: Radius.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
+    height: 44,
+    borderRadius: Radius.sm,
+    fontWeight: '500',
   },
   filterTabsRow: {
     paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.xs,
-    gap: Spacing.xs + 2,
+    paddingVertical: 4,
+    gap: 6,
   },
   filterChip: {
-    paddingHorizontal: Spacing.sm + 4,
-    paddingVertical: 6,
+    paddingHorizontal: 14,
+    paddingVertical: 7,
     borderRadius: Radius.pill,
     backgroundColor: Colors.surface,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   filterChipActive: {
-    backgroundColor: Colors.accentDim,
-    borderColor: Colors.accent,
+    backgroundColor: Colors.surfaceDark,
+    borderColor: Colors.surfaceDark,
   },
   filterChipText: {
-    color: Colors.textSecondary,
+    color: Colors.text,
     fontSize: FontSize.xs,
     fontWeight: '600',
   },
   filterChipTextActive: {
-    color: Colors.accent,
+    color: Colors.textInverse,
     fontWeight: '700',
   },
   list: {
     padding: Spacing.lg,
+    paddingBottom: 110,
     gap: Spacing.md,
   },
   cardItem: {
     backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
   },
   cardItemCompleted: {
-    borderColor: Colors.borderAccent,
+    borderColor: Colors.borderStrong,
   },
   cardHeader: {
     flexDirection: 'row',
@@ -458,43 +499,48 @@ const styles = StyleSheet.create({
     gap: Spacing.sm,
   },
   kindBadge: {
-    backgroundColor: Colors.surfaceLight,
-    paddingHorizontal: Spacing.sm,
-    paddingVertical: 2,
-    borderRadius: Radius.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.xs,
   },
   kindText: {
-    color: Colors.accent,
-    fontSize: FontSize.sm,
-    fontWeight: '700',
+    color: Colors.text,
+    fontSize: 11,
+    fontWeight: '800',
   },
   intentTag: {
     color: Colors.textSecondary,
     fontSize: FontSize.xs,
-    fontStyle: 'italic',
+    fontWeight: '600',
     flex: 1,
     textAlign: 'right',
   },
   cardTitle: {
     color: Colors.text,
     fontSize: FontSize.lg,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 4,
-    lineHeight: FontSize.lg * 1.3,
+    lineHeight: FontSize.lg * 1.25,
   },
   cardSource: {
     color: Colors.textSecondary,
     fontSize: FontSize.sm,
+    fontWeight: '600',
     marginBottom: Spacing.sm,
   },
   tldrContainer: {
-    backgroundColor: Colors.bgElevated,
+    backgroundColor: Colors.bg,
     borderRadius: Radius.sm,
     padding: Spacing.sm + 2,
     marginBottom: Spacing.sm,
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   bulletTouchRow: {
-    paddingVertical: 3,
+    paddingVertical: 6,
+    borderBottomWidth: 1,
+    borderStyle: 'dotted',
+    borderBottomColor: Colors.border,
   },
   bulletText: {
     color: Colors.text,
@@ -502,29 +548,27 @@ const styles = StyleSheet.create({
     lineHeight: FontSize.sm * 1.4,
   },
   bulletTextChecked: {
-    color: Colors.accent,
+    fontWeight: '700',
   },
   notePreviewBox: {
-    backgroundColor: Colors.bgElevated,
-    borderRadius: Radius.sm,
-    paddingHorizontal: Spacing.sm + 2,
+    backgroundColor: Colors.lemonSoft,
+    borderRadius: Radius.xs,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     marginBottom: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.borderSubtle,
   },
   notePreviewText: {
-    color: Colors.textSecondary,
+    color: Colors.text,
     fontSize: FontSize.xs,
-    fontStyle: 'italic',
+    fontWeight: '600',
   },
   inlineNoteEditor: {
-    backgroundColor: Colors.bgElevated,
+    backgroundColor: Colors.bg,
     borderRadius: Radius.sm,
     padding: Spacing.sm,
     marginBottom: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.accent,
+    borderColor: Colors.borderStrong,
   },
   inlineNoteInput: {
     color: Colors.text,
@@ -538,56 +582,55 @@ const styles = StyleSheet.create({
     gap: Spacing.xs,
   },
   saveNoteSmallBtn: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.surfaceDark,
     paddingHorizontal: Spacing.md,
     paddingVertical: 6,
-    borderRadius: Radius.sm,
+    borderRadius: Radius.xs,
   },
   saveNoteSmallText: {
-    color: Colors.bg,
+    color: Colors.textInverse,
     fontSize: FontSize.xs,
     fontWeight: '700',
   },
   cardActions: {
     flexDirection: 'row',
-    gap: Spacing.xs + 2,
+    gap: 6,
   },
   openBtn: {
     flex: 1,
-    backgroundColor: Colors.accent,
-    paddingVertical: Spacing.sm + 2,
+    backgroundColor: Colors.surfaceDark,
+    paddingVertical: 10,
     borderRadius: Radius.sm,
     alignItems: 'center',
   },
   openBtnText: {
-    color: Colors.bg,
+    color: Colors.textInverse,
     fontSize: FontSize.sm,
     fontWeight: '700',
   },
   reviewBtn: {
-    paddingVertical: Spacing.sm + 2,
-    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     borderRadius: Radius.sm,
     borderWidth: 1,
-    borderColor: Colors.border,
-    backgroundColor: Colors.surfaceLight,
+    borderColor: Colors.borderStrong,
+    backgroundColor: Colors.surface,
   },
   reviewBtnActive: {
-    borderColor: Colors.accent,
-    backgroundColor: Colors.accentDim,
+    backgroundColor: Colors.mint,
   },
   reviewBtnText: {
-    color: Colors.textSecondary,
+    color: Colors.text,
     fontSize: FontSize.xs,
-    fontWeight: '600',
-  },
-  reviewBtnTextActive: {
-    color: Colors.accent,
     fontWeight: '700',
   },
+  reviewBtnTextActive: {
+    color: Colors.text,
+    fontWeight: '800',
+  },
   removeBtn: {
-    paddingVertical: Spacing.sm + 2,
-    paddingHorizontal: Spacing.sm + 2,
+    paddingVertical: 10,
+    paddingHorizontal: 10,
     borderRadius: Radius.sm,
     borderWidth: 1,
     borderColor: Colors.border,
@@ -595,6 +638,7 @@ const styles = StyleSheet.create({
   removeBtnText: {
     color: Colors.textSecondary,
     fontSize: FontSize.xs,
+    fontWeight: '600',
   },
   emptyContainer: {
     flex: 1,
@@ -603,13 +647,13 @@ const styles = StyleSheet.create({
     padding: Spacing.xl,
   },
   emptyEmoji: {
-    fontSize: 56,
+    fontSize: 48,
     marginBottom: Spacing.md,
   },
   emptyTitle: {
     color: Colors.text,
     fontSize: FontSize.xl,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: Spacing.xs,
   },
   emptySubtitle: {

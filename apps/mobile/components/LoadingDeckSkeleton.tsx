@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, memo } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { Colors, FontSize, Radius, Spacing } from '@/constants/theme';
 import type { Mode, TimeBox } from '@skip-the-scroll/shared';
@@ -10,12 +10,12 @@ interface LoadingDeckSkeletonProps {
 }
 
 const PIPELINE_STEPS = [
-  'Normalising your intent into high-precision queries…',
-  'Searching YouTube, Docs, Wikipedia & community sources…',
-  'Synthesising 3-bullet TL;DR takeaways & guardrails…',
+  '01 · Normalising intent into high-precision queries…',
+  '02 · Querying YouTube, Docs, Wikipedia & community sources…',
+  '03 · Synthesising 3-bullet TL;DR takeaways & guardrails…',
 ];
 
-export function LoadingDeckSkeleton({
+export const LoadingDeckSkeleton = memo(function LoadingDeckSkeleton({
   intent,
   mode,
   timeBox,
@@ -25,16 +25,23 @@ export function LoadingDeckSkeleton({
   useEffect(() => {
     const interval = setInterval(() => {
       setStepIdx((prev) => (prev < PIPELINE_STEPS.length - 1 ? prev + 1 : prev));
-    }, 1300);
+    }, 1200);
     return () => clearInterval(interval);
   }, []);
 
   return (
     <View style={styles.container} accessibilityLabel="Curating your intentional deck">
-      <View style={styles.headerBadge}>
-        <Text style={styles.headerBadgeText}>
-          ✦  CURATING FINITE DECK  ·  {mode.toUpperCase()}  ·  {timeBox} MIN
-        </Text>
+      <View style={styles.topRow}>
+        <View style={styles.headerBadge}>
+          <Text style={styles.headerBadgeText}>
+            CURATING FINITE DECK · {mode.toUpperCase()} · {timeBox}M
+          </Text>
+        </View>
+        <View style={styles.loaderBars}>
+          <View style={[styles.loaderBar, { height: 18 }]} />
+          <View style={[styles.loaderBar, { height: 12 }]} />
+          <View style={[styles.loaderBar, { height: 22 }]} />
+        </View>
       </View>
 
       <Text style={styles.intentTitle} numberOfLines={2}>
@@ -48,15 +55,13 @@ export function LoadingDeckSkeleton({
           const isCurrent = idx === stepIdx;
           return (
             <View key={label} style={styles.stepRow}>
-              <Text
+              <View
                 style={[
-                  styles.stepIcon,
-                  isDone && styles.stepIconDone,
-                  isCurrent && styles.stepIconActive,
+                  styles.stepDot,
+                  isDone && styles.stepDotDone,
+                  isCurrent && styles.stepDotActive,
                 ]}
-              >
-                {isDone ? '✓' : isCurrent ? '◉' : '○'}
-              </Text>
+              />
               <Text
                 style={[
                   styles.stepText,
@@ -74,50 +79,56 @@ export function LoadingDeckSkeleton({
       {/* Skeleton card preview */}
       <View style={styles.skeletonCard}>
         <View style={styles.skeletonThumb} />
-        <View style={styles.skeletonPill} />
         <View style={styles.skeletonTitleLine} />
         <View style={[styles.skeletonTitleLine, { width: '65%' }]} />
-        <View style={styles.skeletonTldrBox}>
-          <View style={styles.skeletonBulletLine} />
-          <View style={[styles.skeletonBulletLine, { width: '88%' }]} />
-          <View style={[styles.skeletonBulletLine, { width: '76%' }]} />
-        </View>
       </View>
     </View>
   );
-}
+});
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.surface,
+    backgroundColor: Colors.surfaceDark, // #222222 (.card-directory-sp)
     borderRadius: Radius.lg,
     padding: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderAccent,
     marginVertical: Spacing.md,
   },
-  headerBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.accentDim,
-    paddingHorizontal: Spacing.sm + 2,
-    paddingVertical: Spacing.xs,
-    borderRadius: Radius.pill,
+  topRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: Spacing.sm,
   },
+  headerBadge: {
+    backgroundColor: Colors.lemon, // #FFF083
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: Radius.xs,
+  },
   headerBadgeText: {
-    color: Colors.accent,
-    fontSize: FontSize.xs,
-    fontWeight: '700',
+    color: Colors.text,
+    fontSize: 10,
+    fontWeight: '800',
     letterSpacing: 0.8,
   },
+  loaderBars: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  loaderBar: {
+    width: 4,
+    backgroundColor: Colors.mint,
+    borderRadius: 2,
+  },
   intentTitle: {
-    color: Colors.text,
-    fontSize: FontSize.lg,
-    fontWeight: '700',
+    color: Colors.textInverse,
+    fontSize: FontSize.xl,
+    fontWeight: '800',
     marginBottom: Spacing.md,
   },
   stepsBox: {
-    gap: Spacing.xs + 2,
+    gap: 8,
     marginBottom: Spacing.md,
   },
   stepRow: {
@@ -125,69 +136,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: Spacing.sm,
   },
-  stepIcon: {
-    color: Colors.textMuted,
-    fontSize: FontSize.sm,
-    width: 18,
+  stepDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: Colors.surfaceDarkBorder,
   },
-  stepIconActive: {
-    color: Colors.accent,
-    fontWeight: '700',
+  stepDotActive: {
+    backgroundColor: Colors.lemon,
   },
-  stepIconDone: {
-    color: Colors.success,
-    fontWeight: '700',
+  stepDotDone: {
+    backgroundColor: Colors.mint,
   },
   stepText: {
     color: Colors.textMuted,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     flex: 1,
   },
   stepTextActive: {
-    color: Colors.text,
-    fontWeight: '600',
+    color: Colors.textInverse,
+    fontWeight: '700',
   },
   stepTextDone: {
-    color: Colors.textSecondary,
+    color: Colors.mint,
   },
   skeletonCard: {
-    backgroundColor: Colors.bgElevated,
-    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceDarkInner,
+    borderRadius: Radius.sm,
     padding: Spacing.md,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   skeletonThumb: {
-    height: 78,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surfaceLight,
-    marginBottom: Spacing.sm,
-  },
-  skeletonPill: {
-    width: 80,
-    height: 18,
-    borderRadius: Radius.pill,
-    backgroundColor: Colors.surfaceLight,
+    height: 54,
+    borderRadius: Radius.xs,
+    backgroundColor: Colors.surfaceDarkBorder,
     marginBottom: Spacing.sm,
   },
   skeletonTitleLine: {
-    width: '92%',
-    height: 16,
-    borderRadius: Radius.xs,
-    backgroundColor: Colors.surfaceLight,
-    marginBottom: Spacing.xs + 2,
-  },
-  skeletonTldrBox: {
-    marginTop: Spacing.sm,
-    padding: Spacing.sm,
-    borderRadius: Radius.sm,
-    backgroundColor: Colors.surface,
-    gap: 6,
-  },
-  skeletonBulletLine: {
-    width: '95%',
-    height: 10,
-    borderRadius: Radius.xs,
-    backgroundColor: Colors.surfaceLight,
+    width: '90%',
+    height: 12,
+    borderRadius: 3,
+    backgroundColor: Colors.surfaceDarkBorder,
+    marginBottom: 6,
   },
 });

@@ -7,6 +7,12 @@ import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
 import { getStoredSession } from '@/store/sessionStore';
 import { logSessionEnd, saveCard, isCardSaved } from '@/store/storage';
 
+/**
+ * Modeled directly on UI.html `.card-certificate` (line 7022):
+ * - Top 10px solid award border (`#FFF083` / `#AAEEC4`)
+ * - Editorial certificate header with `W.` monogram and date
+ * - 1px solid horizontal rule dividers around the completed intent title
+ */
 export default function EndScreen() {
   const { id, takeaways, elapsed } = useLocalSearchParams<{
     id: string;
@@ -53,62 +59,70 @@ export default function EndScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        {/* Completion Crest */}
-        <View style={styles.checkOrb}>
-          <Text style={styles.emoji}>✓</Text>
-        </View>
-
-        <Text style={styles.title}>That's all.</Text>
-        <Text style={styles.subtitle}>Did you get what you needed?</Text>
-
-        {/* Session Summary Pill Row */}
-        {session && (
-          <View style={styles.summaryCard}>
-            <Text style={styles.intentQuoted}>“{session.intent}”</Text>
-            <Text style={styles.meta}>
-              {session.cards.length} cards  ·  {session.mode}  ·  {session.timeboxMin} min
-              {elapsedMinDisplay ? `  ·  ${elapsedMinDisplay}` : ''}
-            </Text>
-
-            {takeawaysCount > 0 && (
-              <View style={styles.takeawayBadge}>
-                <Text style={styles.takeawayBadgeText}>
-                  ✦ {takeawaysCount} key takeaway{takeawaysCount === 1 ? '' : 's'} mastered
-                </Text>
+        <View style={styles.certificateCard}>
+          {/* Certificate Header (.card-certificate__header) */}
+          <View style={styles.certHeader}>
+            <Text style={styles.certMonogram}>W.</Text>
+            <View style={styles.certMetaGroup}>
+              <Text style={styles.certMetaText}>FINITE SESSION CERTIFICATE</Text>
+              <View style={styles.mintBadge}>
+                <Text style={styles.mintBadgeText}>COMPLETED ✓</Text>
               </View>
-            )}
+            </View>
           </View>
-        )}
 
-        {/* Primary Outcome Buttons */}
-        <View style={styles.actions}>
-          <Pressable
-            style={styles.primaryButton}
-            onPress={() => handleOutcome('done')}
-          >
-            <Text style={styles.primaryButtonText}>✓  Done — I got what I needed</Text>
-          </Pressable>
+          <Text style={styles.title}>That's all.</Text>
+          <Text style={styles.subtitle}>Did you get what you needed?</Text>
 
-          <Pressable
-            style={styles.secondaryButton}
-            onPress={() => handleOutcome('refine')}
-          >
-            <Text style={styles.secondaryButtonText}>↻  Refine my search</Text>
-          </Pressable>
+          {/* Session Summary (.card-certificate__title & .card-certificate__by) */}
+          {session && (
+            <View style={styles.certBody}>
+              <Text style={styles.intentQuoted}>“{session.intent}”</Text>
+              <Text style={styles.meta}>
+                {session.cards.length} cards  ·  {session.mode}  ·  {session.timeboxMin} min
+                {elapsedMinDisplay ? `  ·  ${elapsedMinDisplay}` : ''}
+              </Text>
 
-          <Pressable
-            style={styles.tertiaryButton}
-            onPress={() => handleOutcome('save')}
-          >
-            <Text style={styles.tertiaryButtonText}>★  Save deck for later</Text>
-          </Pressable>
+              {takeawaysCount > 0 && (
+                <View style={styles.takeawayBadge}>
+                  <Text style={styles.takeawayBadgeText}>
+                    ✦ {takeawaysCount} KEY TAKEAWAY{takeawaysCount === 1 ? '' : 'S'} MASTERED
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* Primary Outcome Buttons (.button & .button--outline) */}
+          <View style={styles.actions}>
+            <Pressable
+              style={styles.primaryButton}
+              onPress={() => handleOutcome('done')}
+            >
+              <Text style={styles.primaryButtonText}>✓  Done</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.secondaryButton}
+              onPress={() => handleOutcome('refine')}
+            >
+              <Text style={styles.secondaryButtonText}>↻  Refine my search</Text>
+            </Pressable>
+
+            <Pressable
+              style={styles.tertiaryButton}
+              onPress={() => handleOutcome('save')}
+            >
+              <Text style={styles.tertiaryButtonText}>↓  Save for later</Text>
+            </Pressable>
+          </View>
         </View>
 
-        {/* Guided Smart Refinement Chips (Starts a fresh session with a sharper intent) */}
+        {/* Guided Smart Refinement Chips (.list-tags & .button--tag) */}
         {suggestedRefinements.length > 0 && (
           <View style={styles.refinementsBox}>
             <Text style={styles.refinementsTitle}>
-              NEED TO GO DEEPER? START A FRESH REFINED SESSION:
+              START A FRESH REFINED SESSION:
             </Text>
             <View style={styles.refinementChips}>
               {suggestedRefinements.map((refQuery) => (
@@ -137,138 +151,166 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    padding: Spacing.lg,
+  },
+  certificateCard: {
+    width: '100%',
+    maxWidth: 520,
+    backgroundColor: Colors.surface, // #FFFFFF
+    borderRadius: Radius.lg,
+    borderTopWidth: 10,
+    borderTopColor: Colors.mint,     // #AAEEC4 (.card-certificate)
+    borderWidth: 1,
+    borderColor: Colors.border,
     padding: Spacing.xl,
   },
-  checkOrb: {
-    width: 84,
-    height: 84,
-    borderRadius: 42,
-    backgroundColor: Colors.accentDim,
-    borderWidth: 2,
-    borderColor: Colors.accent,
+  certHeader: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: Spacing.md,
+    justifyContent: 'space-between',
+    marginBottom: Spacing.lg,
   },
-  emoji: {
-    fontSize: 40,
-    color: Colors.accent,
+  certMonogram: {
+    color: Colors.text,
+    fontSize: 28,
+    fontWeight: '900',
+    letterSpacing: -1.5,
+  },
+  certMetaGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  certMetaText: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.8,
+  },
+  mintBadge: {
+    backgroundColor: Colors.mint,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: Radius.xs,
+  },
+  mintBadgeText: {
+    color: Colors.text,
+    fontSize: 10,
     fontWeight: '800',
   },
   title: {
     color: Colors.text,
-    fontSize: FontSize.xxl,
-    fontWeight: '800',
-    marginBottom: Spacing.xs,
+    fontSize: FontSize.hero,
+    fontWeight: '900',
+    letterSpacing: -1.2,
+    marginBottom: 4,
   },
   subtitle: {
     color: Colors.textSecondary,
     fontSize: FontSize.lg,
     marginBottom: Spacing.lg,
-    textAlign: 'center',
   },
-  summaryCard: {
-    width: '100%',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
-    borderWidth: 1,
+  certBody: {
+    paddingVertical: Spacing.md,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
     borderColor: Colors.border,
-    alignItems: 'center',
     marginBottom: Spacing.xl,
   },
   intentQuoted: {
     color: Colors.text,
-    fontSize: FontSize.md,
-    fontWeight: '700',
-    marginBottom: 4,
-    textAlign: 'center',
+    fontSize: FontSize.lg,
+    fontWeight: '800',
+    marginBottom: 6,
   },
   meta: {
     color: Colors.textSecondary,
     fontSize: FontSize.sm,
+    fontWeight: '600',
   },
   takeawayBadge: {
+    alignSelf: 'flex-start',
     marginTop: Spacing.sm,
-    backgroundColor: Colors.accentDim,
-    paddingHorizontal: Spacing.sm + 4,
+    backgroundColor: Colors.lemon,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: Radius.pill,
+    borderRadius: Radius.xs,
   },
   takeawayBadgeText: {
-    color: Colors.accent,
-    fontSize: FontSize.xs,
-    fontWeight: '700',
+    color: Colors.text,
+    fontSize: 10,
+    fontWeight: '800',
   },
   actions: {
     width: '100%',
     gap: Spacing.sm,
   },
   primaryButton: {
-    backgroundColor: Colors.accent,
-    paddingVertical: Spacing.md + 2,
-    borderRadius: Radius.md,
+    backgroundColor: Colors.surfaceDark, // #222222
+    height: 52,
+    borderRadius: Radius.sm,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   primaryButtonText: {
-    color: Colors.bg,
+    color: Colors.textInverse,
     fontSize: FontSize.md,
     fontWeight: '800',
   },
   secondaryButton: {
-    borderWidth: 1.5,
-    borderColor: Colors.accent,
-    paddingVertical: Spacing.md + 2,
-    borderRadius: Radius.md,
+    backgroundColor: Colors.lemon, // #FFF083
+    height: 50,
+    borderRadius: Radius.sm,
     alignItems: 'center',
-    backgroundColor: Colors.accentDim,
+    justifyContent: 'center',
   },
   secondaryButtonText: {
-    color: Colors.accent,
+    color: Colors.text,
     fontSize: FontSize.md,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   tertiaryButton: {
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderStrong,
     backgroundColor: Colors.surface,
-    paddingVertical: Spacing.md + 2,
-    borderRadius: Radius.md,
+    height: 50,
+    borderRadius: Radius.sm,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   tertiaryButtonText: {
     color: Colors.text,
     fontSize: FontSize.md,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   refinementsBox: {
     width: '100%',
-    marginTop: Spacing.xl,
-    paddingTop: Spacing.lg,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    maxWidth: 520,
+    marginTop: Spacing.lg,
   },
   refinementsTitle: {
     color: Colors.textMuted,
-    fontSize: 11,
+    fontSize: 10,
     fontWeight: '800',
-    letterSpacing: 0.8,
+    letterSpacing: 1,
     marginBottom: Spacing.sm,
   },
   refinementChips: {
-    gap: Spacing.xs + 2,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
   refinementChip: {
     backgroundColor: Colors.surface,
     borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: Radius.sm,
-    paddingVertical: Spacing.sm + 2,
-    paddingHorizontal: Spacing.md,
+    borderColor: Colors.textMuted,
+    borderRadius: Radius.pill,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
   },
   refinementChipText: {
     color: Colors.text,
-    fontSize: FontSize.sm,
+    fontSize: FontSize.xs,
     fontWeight: '600',
   },
 });

@@ -12,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { MODES, type Mode } from '@skip-the-scroll/shared';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
+import { FloatingMenuDock } from '@/components/FloatingMenuDock';
 import {
   getInsightsData,
   exportDogfoodStatsJson,
@@ -39,7 +40,7 @@ export default function InsightsScreen() {
     loadData();
   }, [loadData]);
 
-  const handleExport = async () => {
+  const handleExport = useCallback(async () => {
     try {
       const jsonStr = await exportDogfoodStatsJson();
       await Share.share({
@@ -49,9 +50,9 @@ export default function InsightsScreen() {
     } catch {
       Alert.alert('Export Failed', 'Could not open the share sheet. Please try again.');
     }
-  };
+  }, []);
 
-  const handleExportMarkdown = async () => {
+  const handleExportMarkdown = useCallback(async () => {
     try {
       const md = await exportStudyGuideMarkdown();
       await Share.share({
@@ -61,7 +62,7 @@ export default function InsightsScreen() {
     } catch {
       Alert.alert('Export Failed', 'Could not share study guide.');
     }
-  };
+  }, []);
 
   const maxDailyCount = Math.max(
     1,
@@ -77,16 +78,19 @@ export default function InsightsScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        {/* Header */}
+      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Header (.c-heading) */}
         <View style={styles.header}>
           <Pressable onPress={() => router.back()} style={styles.backBtn}>
             <Text style={styles.backBtnText}>← Back</Text>
           </Pressable>
-          <Text style={styles.title}>Insights</Text>
+          <View>
+            <Text style={styles.eyebrow}>W.METRICS</Text>
+            <Text style={styles.title}>Insights</Text>
+          </View>
         </View>
 
-        {/* Time Window Switcher */}
+        {/* Time Window Switcher (.nav-filters__container) */}
         <View style={styles.tabRow}>
           <Pressable
             style={[styles.tab, selectedDays === 7 && styles.tabActive]}
@@ -117,18 +121,19 @@ export default function InsightsScreen() {
           </Pressable>
         </View>
 
-        {/* Highlight Card: Estimated Minutes Saved + Intentionality Score */}
+        {/* Dark Directory Hero Card (.card-directory-sp line 7215) */}
         <View style={styles.highlightCard}>
           <View style={styles.highlightTopRow}>
             <View style={styles.highlightCol}>
+              <Text style={styles.highlightEyebrow}>ESTIMATE</Text>
               <Text style={styles.highlightNumber}>
                 ~{data?.estimatedMinutesSaved ?? 0}
               </Text>
               <Text style={styles.highlightTitle}>Estimated Minutes Saved</Text>
             </View>
             <View style={styles.scoreBadgeBox}>
+              <Text style={styles.scoreLabel}>INTENTIONALITY</Text>
               <Text style={styles.scoreValue}>{data?.intentionalityScore ?? 100}%</Text>
-              <Text style={styles.scoreLabel}>Intentionality</Text>
             </View>
           </View>
           <Text style={styles.highlightFootnote}>
@@ -136,12 +141,12 @@ export default function InsightsScreen() {
           </Text>
         </View>
 
-        {/* Primary Metrics Grid */}
+        {/* Primary Metrics Grid (.tb-stats line 9403) */}
         <View style={styles.grid}>
           {/* Card 1: Sessions Done Rate */}
           <View style={styles.gridItem}>
-            <Text style={styles.gridNumber}>{data?.doneRatePercent ?? 0}%</Text>
             <Text style={styles.gridLabel}>"Done" Rate</Text>
+            <Text style={styles.gridNumber}>{data?.doneRatePercent ?? 0}%</Text>
             <Text style={styles.gridSub}>
               Sessions where you got what you needed
             </Text>
@@ -149,35 +154,35 @@ export default function InsightsScreen() {
 
           {/* Card 2: Completed Sessions */}
           <View style={styles.gridItem}>
+            <Text style={styles.gridLabel}>Sessions Finished</Text>
             <Text style={styles.gridNumber}>
               {data?.sessionsFinished ?? 0}
               <Text style={styles.gridDenominator}>/{data?.sessionsStarted ?? 0}</Text>
             </Text>
-            <Text style={styles.gridLabel}>Sessions Finished</Text>
             <Text style={styles.gridSub}>Finite decks completed</Text>
           </View>
 
           {/* Card 3: Gate Redirects */}
           <View style={styles.gridItem}>
-            <Text style={styles.gridNumber}>{data?.gateRedirects ?? 0}</Text>
             <Text style={styles.gridLabel}>Scrolls Redirected</Text>
+            <Text style={styles.gridNumber}>{data?.gateRedirects ?? 0}</Text>
             <Text style={styles.gridSub}>Autopilot feed opens turned into intent</Text>
           </View>
 
           {/* Card 4: Continue Anyway */}
           <View style={styles.gridItem}>
-            <Text style={styles.gridNumber}>{data?.continueAnyway ?? 0}</Text>
             <Text style={styles.gridLabel}>Continued Anyway</Text>
+            <Text style={styles.gridNumber}>{data?.continueAnyway ?? 0}</Text>
             <Text style={styles.gridSub}>Deliberate bypasses tapped</Text>
           </View>
         </View>
 
-        {/* 7-Day Activity Sparkline Chart */}
+        {/* 7-Day Activity Bar Chart */}
         {data?.dailyActivity && (
           <View style={styles.sectionCard}>
             <Text style={styles.sectionTitle}>7-Day Intentional Rhythm</Text>
             <Text style={styles.sectionSubtitle}>
-              Daily finite sessions started and finished (no streak penalties)
+              Daily finite sessions started and finished (zero streak penalties)
             </Text>
             <View style={styles.chartRow}>
               {data.dailyActivity.map((pt) => {
@@ -226,7 +231,7 @@ export default function InsightsScreen() {
           <View style={styles.masteryRow}>
             <View style={styles.masteryPill}>
               <Text style={styles.masteryNum}>{data?.totalTakeawaysChecked ?? 0}</Text>
-              <Text style={styles.masteryText}>Takeaways Checked ✓</Text>
+              <Text style={styles.masteryText}>Takeaways Mastered ✓</Text>
             </View>
             <View style={styles.masteryPill}>
               <Text style={styles.masteryNum}>
@@ -237,7 +242,7 @@ export default function InsightsScreen() {
           </View>
         </View>
 
-        {/* Principles Reminder */}
+        {/* Principles Reminder (.box-featured--green) */}
         <View style={styles.calmCard}>
           <Text style={styles.calmTitle}>Ethical Metrics</Text>
           <Text style={styles.calmText}>
@@ -245,7 +250,7 @@ export default function InsightsScreen() {
           </Text>
         </View>
 
-        {/* Export Buttons for Dogfood Study & Study Guide */}
+        {/* Export Buttons */}
         <Pressable style={styles.exportBtn} onPress={handleExport}>
           <Text style={styles.exportBtnText}>📤  Export Dogfood Study Data (JSON)</Text>
         </Pressable>
@@ -256,6 +261,12 @@ export default function InsightsScreen() {
           </Text>
         </Pressable>
       </ScrollView>
+
+      <FloatingMenuDock
+        activeTab="insights"
+        ctaLabel="Export JSON"
+        onCtaPress={handleExport}
+      />
     </SafeAreaView>
   );
 }
@@ -267,60 +278,62 @@ const styles = StyleSheet.create({
   },
   scroll: {
     padding: Spacing.lg,
-    paddingBottom: Spacing.xxl,
+    paddingBottom: 110,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: Spacing.lg,
+    marginBottom: Spacing.md,
   },
   backBtn: {
     paddingRight: Spacing.md,
   },
   backBtnText: {
-    color: Colors.accent,
-    fontSize: FontSize.md,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: FontSize.sm,
+    fontWeight: '700',
+  },
+  eyebrow: {
+    color: Colors.textMuted,
+    fontSize: 10,
+    fontWeight: '800',
+    letterSpacing: 1,
   },
   title: {
     color: Colors.text,
     fontSize: FontSize.xl,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   tabRow: {
     flexDirection: 'row',
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: Spacing.xs,
+    backgroundColor: Colors.surfaceLight, // #EDEDED
+    borderRadius: Radius.sm,
+    padding: 6,
     marginBottom: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.border,
   },
   tab: {
     flex: 1,
-    paddingVertical: Spacing.sm + 2,
+    height: 38,
     alignItems: 'center',
-    borderRadius: Radius.sm,
+    justifyContent: 'center',
+    borderRadius: 6,
   },
   tabActive: {
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.surfaceDark,
   },
   tabText: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    fontWeight: '600',
-  },
-  tabTextActive: {
-    color: Colors.bg,
+    color: Colors.text,
+    fontSize: FontSize.xs,
     fontWeight: '700',
   },
+  tabTextActive: {
+    color: Colors.textInverse,
+  },
   highlightCard: {
-    backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: Spacing.lg,
+    backgroundColor: Colors.surfaceDark, // #222222 (.card-directory-sp)
+    borderRadius: Radius.lg,
+    padding: Spacing.xl,
     marginBottom: Spacing.lg,
-    borderWidth: 1,
-    borderColor: Colors.borderAccent,
   },
   highlightTopRow: {
     flexDirection: 'row',
@@ -331,70 +344,77 @@ const styles = StyleSheet.create({
   highlightCol: {
     flex: 1,
   },
-  highlightNumber: {
-    color: Colors.accent,
-    fontSize: 48,
+  highlightEyebrow: {
+    color: Colors.mint,
+    fontSize: 10,
     fontWeight: '800',
+    letterSpacing: 1,
+  },
+  highlightNumber: {
+    color: Colors.textInverse,
+    fontSize: 52,
+    fontWeight: '900',
+    letterSpacing: -1.5,
   },
   highlightTitle: {
-    color: Colors.text,
+    color: Colors.textInverse,
     fontSize: FontSize.md,
     fontWeight: '700',
   },
   scoreBadgeBox: {
-    backgroundColor: Colors.accentDim,
-    borderRadius: Radius.md,
+    backgroundColor: Colors.lemon, // #FFF083
+    borderRadius: Radius.sm,
     paddingHorizontal: Spacing.md,
     paddingVertical: Spacing.sm + 2,
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: Colors.accent,
-  },
-  scoreValue: {
-    color: Colors.accent,
-    fontSize: FontSize.xl,
-    fontWeight: '800',
   },
   scoreLabel: {
-    color: Colors.textSecondary,
-    fontSize: FontSize.xs,
-    fontWeight: '600',
+    color: Colors.text,
+    fontSize: 9,
+    fontWeight: '800',
+    letterSpacing: 0.6,
+  },
+  scoreValue: {
+    color: Colors.text,
+    fontSize: FontSize.xl,
+    fontWeight: '900',
   },
   highlightFootnote: {
-    color: Colors.textSecondary,
+    color: '#A7A7A7',
     fontSize: FontSize.xs,
-    fontStyle: 'italic',
     lineHeight: FontSize.xs * 1.4,
   },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: Spacing.md,
+    gap: Spacing.sm + 2,
     marginBottom: Spacing.lg,
   },
   gridItem: {
-    width: '47%',
+    width: '48%',
     backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
+    borderRadius: Radius.sm,
     padding: Spacing.md,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderStrong, // .tb-stats 1px solid #222
+  },
+  gridLabel: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
   },
   gridNumber: {
     color: Colors.text,
     fontSize: FontSize.xxl,
-    fontWeight: '800',
-    marginBottom: 2,
+    fontWeight: '900',
+    marginBottom: 4,
   },
   gridDenominator: {
     fontSize: FontSize.md,
     color: Colors.textSecondary,
-  },
-  gridLabel: {
-    color: Colors.accent,
-    fontSize: FontSize.sm,
-    fontWeight: '700',
-    marginBottom: 4,
   },
   gridSub: {
     color: Colors.textSecondary,
@@ -403,8 +423,8 @@ const styles = StyleSheet.create({
   },
   sectionCard: {
     backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    padding: Spacing.md,
+    borderRadius: Radius.lg,
+    padding: Spacing.lg,
     borderWidth: 1,
     borderColor: Colors.border,
     marginBottom: Spacing.lg,
@@ -412,7 +432,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     color: Colors.text,
     fontSize: FontSize.md,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 2,
   },
   sectionSubtitle: {
@@ -424,7 +444,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    height: 112,
+    height: 110,
     paddingTop: Spacing.sm,
   },
   barCol: {
@@ -434,32 +454,32 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   barCountText: {
-    color: Colors.textSecondary,
+    color: Colors.text,
     fontSize: 11,
-    fontWeight: '600',
+    fontWeight: '800',
     marginBottom: 4,
   },
   barTrack: {
-    width: 18,
+    width: 22,
     height: 64,
-    backgroundColor: Colors.bgElevated,
+    backgroundColor: Colors.surfaceLight,
     borderRadius: Radius.xs,
     justifyContent: 'flex-end',
     overflow: 'hidden',
   },
   barFill: {
     width: '100%',
-    backgroundColor: Colors.accent,
+    backgroundColor: Colors.surfaceDark,
     borderRadius: Radius.xs,
   },
   barFillEmpty: {
-    backgroundColor: Colors.surfaceLight,
+    backgroundColor: Colors.border,
   },
   barDayLabel: {
-    color: Colors.textMuted,
+    color: Colors.textSecondary,
     fontSize: 11,
     marginTop: 6,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   modeList: {
     gap: Spacing.sm,
@@ -476,90 +496,93 @@ const styles = StyleSheet.create({
   modeName: {
     color: Colors.text,
     fontSize: FontSize.sm,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   modeCount: {
     color: Colors.textSecondary,
     fontSize: FontSize.xs,
+    fontWeight: '600',
   },
   modeBarTrack: {
     height: 6,
-    backgroundColor: Colors.bgElevated,
-    borderRadius: Radius.pill,
+    backgroundColor: Colors.surfaceLight,
+    borderRadius: Radius.xs,
     overflow: 'hidden',
   },
   modeBarFill: {
     height: '100%',
-    backgroundColor: Colors.accent,
-    borderRadius: Radius.pill,
+    backgroundColor: Colors.surfaceDark,
   },
   masteryRow: {
     flexDirection: 'row',
     gap: Spacing.sm,
-    paddingTop: Spacing.sm,
+    paddingTop: Spacing.md,
     borderTopWidth: 1,
-    borderTopColor: Colors.border,
+    borderStyle: 'dotted',
+    borderTopColor: Colors.borderStrong,
   },
   masteryPill: {
     flex: 1,
-    backgroundColor: Colors.bgElevated,
+    backgroundColor: Colors.bg,
     borderRadius: Radius.sm,
-    padding: Spacing.sm,
+    padding: Spacing.sm + 2,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.border,
   },
   masteryNum: {
-    color: Colors.accent,
+    color: Colors.text,
     fontSize: FontSize.lg,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   masteryText: {
     color: Colors.textSecondary,
     fontSize: FontSize.xs,
+    fontWeight: '600',
     marginTop: 2,
   },
   calmCard: {
-    backgroundColor: Colors.surfaceLight,
-    borderRadius: Radius.md,
+    backgroundColor: Colors.mintSoft, // #E2F4E9 (.box-featured--green)
+    borderRadius: Radius.sm,
     padding: Spacing.md,
     marginBottom: Spacing.lg,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.accent,
   },
   calmTitle: {
     color: Colors.text,
     fontSize: FontSize.md,
-    fontWeight: '700',
+    fontWeight: '800',
     marginBottom: 4,
   },
   calmText: {
-    color: Colors.textSecondary,
+    color: Colors.text,
     fontSize: FontSize.sm,
     lineHeight: FontSize.sm * 1.4,
   },
   exportBtn: {
-    borderWidth: 1,
-    borderColor: Colors.accent,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
+    backgroundColor: Colors.surfaceDark,
+    borderRadius: Radius.sm,
+    height: 50,
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: Spacing.sm,
   },
   exportBtnText: {
-    color: Colors.accent,
-    fontSize: FontSize.md,
-    fontWeight: '700',
+    color: Colors.textInverse,
+    fontSize: FontSize.sm,
+    fontWeight: '800',
   },
   exportSecondaryBtn: {
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderStrong,
     backgroundColor: Colors.surface,
-    borderRadius: Radius.md,
-    paddingVertical: Spacing.md,
+    borderRadius: Radius.sm,
+    height: 48,
     alignItems: 'center',
+    justifyContent: 'center',
   },
   exportSecondaryBtnText: {
     color: Colors.text,
     fontSize: FontSize.sm,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
