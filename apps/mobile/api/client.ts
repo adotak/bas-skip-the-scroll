@@ -1,4 +1,4 @@
-import type { Session, Mode, TimeBox } from '@skip-the-scroll/shared';
+import type { Session, Mode, TimeBox, Language } from '@skip-the-scroll/shared';
 
 declare const process: {
   env: {
@@ -23,7 +23,8 @@ export class SessionFetchError extends Error {
 export async function fetchSessionFromApi(
   intent: string,
   mode: Mode,
-  timeboxMin: TimeBox
+  timeboxMin: TimeBox,
+  lang?: Language
 ): Promise<Session> {
   const trimmed = intent.trim();
 
@@ -33,16 +34,21 @@ export async function fetchSessionFromApi(
 
     let response: Response;
     try {
+      const payload: Record<string, unknown> = {
+        intent: trimmed,
+        mode,
+        timeboxMin,
+      };
+      if (lang) {
+        payload.lang = lang;
+      }
+
       response = await fetch(`${API_BASE_URL}/v1/sessions`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          intent: trimmed,
-          mode,
-          timeboxMin,
-        }),
+        body: JSON.stringify(payload),
         signal: controller.signal,
       });
     } finally {

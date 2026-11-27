@@ -31,6 +31,12 @@
 
 **D013 — Shared types compile to CJS and API assets copy into dist** — Makes local production startup and serverless packaging reproducible instead of resolving workspace TypeScript source at runtime.
 
+**D014 — Multilingual support (English, Roman Urdu, Urdu) with auto-detection** — Fulfils SPEC §3.8 by automatically detecting Roman Urdu and Urdu script queries and generating localized 3-bullet TL;DRs.
+
+**D015 — Zero-key community providers & curated knowledge fallback** — Adds `DevCommunityProvider` (Dev.to + StackOverflow public APIs) and `CuratedKnowledgeFallback` so the API and mobile app dynamically return high-signal decks even without paid Google Cloud keys or when offline.
+
+**D016 — Interactive TL;DR takeaways, personal micro-notes, and Markdown study guide export** — Transforms passive cards into active learning artifacts stored privately on-device.
+
 ---
 
 ## Dependencies

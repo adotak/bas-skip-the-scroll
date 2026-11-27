@@ -1,8 +1,13 @@
 export {
+  type Language,
+  LANGUAGES,
+  LANGUAGE_LABELS,
   type CardKind,
+  type DifficultyLevel,
   type Card,
   type Mode,
   type TimeBox,
+  type SessionMetadata,
   type Session,
   type SessionOutcome,
   type SessionLogEntry,
@@ -10,4 +15,5 @@ export {
   DEFAULT_CARDS,
   MODES,
   TIME_BOXES,
+  detectIntentLanguage,
 } from './types';

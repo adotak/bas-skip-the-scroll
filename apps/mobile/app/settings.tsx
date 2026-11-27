@@ -10,8 +10,14 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import {
+  LANGUAGES,
+  LANGUAGE_LABELS,
+  type Language,
+} from '@skip-the-scroll/shared';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
 import { AndroidGate } from '@/modules/android-gate';
+import { getPreferredLanguage, setPreferredLanguage } from '@/store/storage';
 
 interface TargetAppOption {
   id: string;
@@ -34,6 +40,7 @@ export default function SettingsScreen() {
   const [isGateEnabled, setIsGateEnabled] = useState(true);
   const [selectedApps, setSelectedApps] = useState<string[]>([]);
   const [pauseSeconds, setPauseSeconds] = useState(5);
+  const [preferredLang, setPreferredLangState] = useState<Language>('en');
 
   const [hasUsageAccess, setHasUsageAccess] = useState(false);
   const [hasOverlay, setHasOverlay] = useState(false);
@@ -44,6 +51,7 @@ export default function SettingsScreen() {
     setSelectedApps(AndroidGate.getTargetApps());
     setPauseSeconds(AndroidGate.getPauseDuration());
     setIsGateEnabled(AndroidGate.getGateStats().isEnabled);
+    getPreferredLanguage().then(setPreferredLangState);
   }, []);
 
   const refreshPermissions = () => {
@@ -87,6 +95,11 @@ export default function SettingsScreen() {
     AndroidGate.setPauseDuration(seconds);
   };
 
+  const handleSelectLanguage = async (lang: Language) => {
+    setPreferredLangState(lang);
+    await setPreferredLanguage(lang);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
@@ -113,6 +126,35 @@ export default function SettingsScreen() {
               trackColor={{ false: Colors.surfaceLight, true: Colors.accent }}
               thumbColor={Colors.text}
             />
+          </View>
+        </View>
+
+        {/* Default Language Preference */}
+        <Text style={styles.sectionTitle}>Default Summary Language</Text>
+        <View style={styles.card}>
+          <Text style={styles.cardSubtitle}>
+            Choose your default TL;DR summary language (Roman Urdu & Urdu queries are also auto-detected):
+          </Text>
+          <View style={styles.chipsRow}>
+            {LANGUAGES.map((l) => (
+              <Pressable
+                key={l}
+                style={[
+                  styles.pauseChip,
+                  preferredLang === l && styles.pauseChipActive,
+                ]}
+                onPress={() => handleSelectLanguage(l)}
+              >
+                <Text
+                  style={[
+                    styles.pauseChipText,
+                    preferredLang === l && styles.pauseChipTextActive,
+                  ]}
+                >
+                  {LANGUAGE_LABELS[l]}
+                </Text>
+              </Pressable>
+            ))}
           </View>
         </View>
 
@@ -196,7 +238,7 @@ export default function SettingsScreen() {
         <Text style={styles.sectionTitle}>Breathing Pause Length</Text>
         <View style={styles.card}>
           <Text style={styles.cardSubtitle}>
-            How many seconds to pause and breathe before showing choices:
+            How many seconds to pause and breathe before showing choices (escalates automatically 5s → 10s → 15s on repeated opens within an hour):
           </Text>
           <View style={styles.chipsRow}>
             {PAUSE_OPTIONS.map((sec) => (
@@ -373,7 +415,7 @@ const styles = StyleSheet.create({
   },
   pauseChipText: {
     color: Colors.textSecondary,
-    fontSize: FontSize.md,
+    fontSize: FontSize.sm,
     fontWeight: '600',
   },
   pauseChipTextActive: {

@@ -11,7 +11,7 @@ export class WikipediaProvider implements Provider {
 
     try {
       const response = await fetch(url.toString(), {
-        headers: { 'User-Agent': 'SkipTheScroll/0.0.1 (educational bot)' },
+        headers: { 'User-Agent': 'SkipTheScroll/1.0 (educational intentional learning app)' },
         signal: AbortSignal.timeout(3000),
       });
 
@@ -33,15 +33,27 @@ export class WikipediaProvider implements Provider {
         return [];
       }
 
-      return data.pages.map((p): Candidate => ({
-        id: `wiki-${p.id}`,
-        kind: 'doc',
-        title: `${p.title} (Wikipedia)`,
-        source: 'wikipedia.org',
-        url: `https://en.wikipedia.org/wiki/${encodeURIComponent(p.key)}`,
-        snippet: p.description || p.title,
-        minutes: 5,
-      }));
+      return data.pages.map((p): Candidate => {
+        const rawThumb = p.thumbnail?.url;
+        const thumbnail = rawThumb
+          ? rawThumb.startsWith('//')
+            ? `https:${rawThumb}`
+            : rawThumb
+          : undefined;
+
+        return {
+          id: `wiki-${p.id}`,
+          kind: 'doc',
+          title: `${p.title} (Wikipedia)`,
+          source: 'wikipedia.org',
+          url: `https://en.wikipedia.org/wiki/${encodeURIComponent(p.key)}`,
+          snippet: p.description || p.title,
+          minutes: 5,
+          thumbnail,
+          difficulty: 'beginner',
+          tags: ['reference', 'wikipedia'],
+        };
+      });
     } catch (err) {
       console.warn('[WikipediaProvider] Fetch failed:', (err as Error).message);
       return [];

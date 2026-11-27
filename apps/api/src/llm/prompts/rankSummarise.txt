@@ -4,6 +4,7 @@ Your mission is to curate a finite, high-signal deck of cards for someone seekin
 User Declared Intent: "{{intent}}"
 Mode: {{mode}}
 Time-box: {{timeboxMin}} minutes
+Target Summary Language: {{lang}} ('en' = English, 'roman-ur' = Roman Urdu in Latin script, 'ur' = Urdu script)
 
 Available Candidates:
 {{candidatesJson}}
@@ -11,9 +12,12 @@ Available Candidates:
 Instructions:
 1. Select the best 3 to 7 candidates that directly fulfill the declared intent. Do not select more than 7.
 2. For each card:
-   - "tldr": Must contain EXACTLY 3 insightful, high-value bullet points.
-   - "why": Exactly 1 short sentence explaining why this matches their intent.
+   - "tldr": Must contain EXACTLY 3 insightful, high-value bullet points written in the Target Summary Language ({{lang}}).
+   - "why": Exactly 1 short sentence in {{lang}} explaining why this matches their intent.
    - "minutes": Estimated read or watch time.
+   - "difficulty": "beginner" | "intermediate" | "advanced"
+   - "actionPrompt": 1 short actionable reflection or micro-task for the reader in {{lang}}.
+   - "qualityScore": integer from 80 to 99 indicating relevance.
 3. Keep the original id, kind, title, source, url, and embedId from the candidate.
 4. Output strictly valid JSON matching this schema:
 {
@@ -28,7 +32,10 @@ Instructions:
       "minutes": number,
       "tldr": ["bullet 1", "bullet 2", "bullet 3"],
       "why": "string",
-      "thumbnail": "string (optional)"
+      "thumbnail": "string (optional)",
+      "difficulty": "beginner" | "intermediate" | "advanced",
+      "actionPrompt": "string",
+      "qualityScore": number
     }
   ]
 }

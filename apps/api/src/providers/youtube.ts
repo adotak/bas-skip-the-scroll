@@ -41,7 +41,7 @@ export class YouTubeProvider implements Provider {
             title: string;
             channelTitle: string;
             description: string;
-            thumbnails?: { medium?: { url: string }; default?: { url: string } };
+            thumbnails?: { high?: { url: string }; medium?: { url: string }; default?: { url: string } };
           };
         }>;
       };
@@ -58,7 +58,12 @@ export class YouTubeProvider implements Provider {
         url: `https://www.youtube.com/watch?v=${item.id.videoId}`,
         embedId: item.id.videoId,
         snippet: item.snippet.description,
-        minutes: 10, // Default estimate, refined by LLM if needed
+        minutes: 10,
+        thumbnail:
+          item.snippet.thumbnails?.high?.url ||
+          item.snippet.thumbnails?.medium?.url ||
+          `https://img.youtube.com/vi/${item.id.videoId}/hqdefault.jpg`,
+        tags: ['video', 'youtube'],
       }));
     } catch (err) {
       console.warn('[YouTubeProvider] Fetch failed:', (err as Error).message);

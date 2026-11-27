@@ -4,23 +4,25 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { GateView } from '@/components/GateView';
 import { Colors } from '@/constants/theme';
 import { AndroidGate } from '@/modules/android-gate';
+import { setActiveAllowance } from '@/store/storage';
 
 export default function GatePreviewScreen() {
   const { from } = useLocalSearchParams<{ from?: string }>();
   const targetApp = from || 'Instagram';
   const pauseSeconds = AndroidGate.getPauseDuration();
+  const escalationLevel: 1 | 2 | 3 =
+    pauseSeconds >= 15 ? 3 : pauseSeconds >= 10 ? 2 : 1;
 
   const handleLookUp = () => {
     router.replace(`/?from=${encodeURIComponent(targetApp)}`);
   };
 
-  const handleTakeBreak = (minutes: number) => {
-    // In preview mode: return to settings or previous screen
-    router.back();
+  const handleTakeBreak = async (minutes: number) => {
+    await setActiveAllowance(targetApp, minutes);
+    router.replace('/');
   };
 
   const handleNeverMind = () => {
-    // Return to start
     router.replace('/');
   };
 
@@ -33,6 +35,7 @@ export default function GatePreviewScreen() {
       <GateView
         targetApp={targetApp}
         initialPauseSeconds={pauseSeconds}
+        escalationLevel={escalationLevel}
         onLookUp={handleLookUp}
         onTakeBreak={handleTakeBreak}
         onNeverMind={handleNeverMind}

@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import type { Card } from '@skip-the-scroll/shared';
+import { detectIntentLanguage, type Card } from '@skip-the-scroll/shared';
 import {
   saveCard,
   getSavedCards,
@@ -7,9 +7,19 @@ import {
   isCardSaved,
   getInsightsData,
   exportDogfoodStatsJson,
+  exportStudyGuideMarkdown,
+  toggleCardTakeaway,
+  getCardTakeaways,
+  saveCardNote,
+  getCardNote,
+  toggleSavedCardCompleted,
+  setActiveAllowance,
+  getActiveAllowance,
+  clearActiveAllowance,
   logSessionStart,
   logSessionEnd,
 } from '../store/storage';
+import { buildDynamicOfflineSession } from '../fixtures/sessions';
 
 beforeEach(async () => {
   await AsyncStorage.clear();
@@ -119,5 +129,49 @@ describe('Insights calculation', () => {
     expect(insights.timeWindowDays).toBe(30);
     expect(insights.sessionsStarted).toBe(1);
     expect(insights.doneRatePercent).toBe(100);
+    expect(insights.dailyActivity).toHaveLength(7);
+    expect(insights.modeBreakdown.learn).toBe(1);
+  });
+
+  test('tracks interactive takeaways, card notes, completion, and markdown export', async () => {
+    await saveCard(sampleCard, 'Test Intent');
+    const checked = await toggleCardTakeaway(sampleCard.id, 0);
+    expect(checked).toEqual([0]);
+    expect(await getCardTakeaways(sampleCard.id)).toEqual([0]);
+
+    await saveCardNote(sampleCard.id, 'Use this pattern in our Express router');
+    expect(await getCardNote(sampleCard.id)).toBe('Use this pattern in our Express router');
+
+    const isCompleted = await toggleSavedCardCompleted(sampleCard.id);
+    expect(isCompleted).toBe(true);
+
+    const markdown = await exportStudyGuideMarkdown();
+    expect(markdown).toContain('# Skip the Scroll — Intentional Study Guide');
+    expect(markdown).toContain('[x] Reviewed — Learning with Intent');
+    expect(markdown).toContain('Use this pattern in our Express router');
+  });
+
+  test('manages active break allowance and language detection + offline synthesis', async () => {
+    expect(detectIntentLanguage('react hooks kaise kaam karte hain')).toBe('roman-ur');
+    expect(detectIntentLanguage('ری ایکٹ ہکس')).toBe('ur');
+    expect(detectIntentLanguage('learn React hooks')).toBe('en');
+
+    await setActiveAllowance('Instagram', 5);
+    const active = await getActiveAllowance();
+    expect(active?.targetApp).toBe('Instagram');
+    expect(active?.minutes).toBe(5);
+
+    await clearActiveAllowance();
+    expect(await getActiveAllowance()).toBeNull();
+
+    const offlineSession = buildDynamicOfflineSession(
+      'react hooks kaise kaam karte hain',
+      'learn',
+      10
+    );
+    expect(offlineSession.lang).toBe('roman-ur');
+    expect(offlineSession.cards.length).toBeGreaterThan(0);
+    expect(offlineSession.meta?.isFallback).toBe(true);
+    expect(offlineSession.meta?.suggestedRefinements?.length).toBeGreaterThan(0);
   });
 });

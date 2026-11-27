@@ -5,6 +5,7 @@ type ContentPagerProps = {
   children: React.ReactNode;
   style?: StyleProp<ViewStyle>;
   initialPage?: number;
+  activePage?: number;
   onPageSelected: (position: number) => void;
 };
 

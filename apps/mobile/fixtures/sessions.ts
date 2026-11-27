@@ -1,7 +1,14 @@
-import type { Session } from '@skip-the-scroll/shared';
+import {
+  detectIntentLanguage,
+  type Session,
+  type Mode,
+  type TimeBox,
+  type Language,
+  type Card,
+} from '@skip-the-scroll/shared';
 
 /**
- * Three realistic fixture sessions for M1.
+ * Three realistic fixture sessions for M1 + dynamic offline deck synthesizer.
  * Covers all three card kinds (video, article, doc) and
  * different modes / time-boxes.
  */
@@ -12,7 +19,18 @@ export const FIXTURE_SESSIONS: Session[] = [
     intent: 'learn React hooks',
     mode: 'learn',
     timeboxMin: 10,
+    lang: 'en',
     createdAt: '2026-11-01T10:00:00Z',
+    meta: {
+      isFallback: false,
+      totalMinutes: 10,
+      suggestedRefinements: [
+        'custom React hooks patterns',
+        'fix stale closures in useEffect',
+        'useMemo vs useCallback performance',
+        'React 19 hooks & Server Actions',
+      ],
+    },
     cards: [
       {
         id: 'c1-1',
@@ -25,10 +43,14 @@ export const FIXTURE_SESSIONS: Session[] = [
         tldr: [
           'useState and useEffect cover 90% of use cases.',
           'Custom hooks let you extract and reuse stateful logic.',
-          'useRef holds a mutable value that doesn\'t trigger re-renders.',
+          "useRef holds a mutable value that doesn't trigger re-renders.",
         ],
-        why: 'Fast, visual overview of every hook you\'ll actually use.',
+        why: "Fast, visual overview of every hook you'll actually use.",
         thumbnail: 'https://img.youtube.com/vi/TNhaISOUy6Q/hqdefault.jpg',
+        difficulty: 'beginner',
+        tags: ['react', 'hooks', 'overview'],
+        actionPrompt: 'Sketch a small component that replaces a class lifecycle with useState + useEffect.',
+        qualityScore: 98,
       },
       {
         id: 'c1-2',
@@ -43,6 +65,10 @@ export const FIXTURE_SESSIONS: Session[] = [
           'Cleanup functions run before the next effect, not on unmount.',
         ],
         why: 'The deepest mental model for useEffect, by a React core team member.',
+        difficulty: 'intermediate',
+        tags: ['useEffect', 'mental-model', 'deep-dive'],
+        actionPrompt: 'Audit one useEffect in your codebase for missing or redundant dependencies.',
+        qualityScore: 96,
       },
       {
         id: 'c1-3',
@@ -57,6 +83,10 @@ export const FIXTURE_SESSIONS: Session[] = [
           'The docs group hooks by purpose: state, context, ref, effect, performance.',
         ],
         why: 'Canonical reference — the single source of truth for every hook.',
+        difficulty: 'beginner',
+        tags: ['official-docs', 'reference', 'react'],
+        actionPrompt: 'Bookmark the State and Effect sections for quick lookup while coding.',
+        qualityScore: 95,
       },
       {
         id: 'c1-4',
@@ -69,10 +99,14 @@ export const FIXTURE_SESSIONS: Session[] = [
         tldr: [
           'useMemo caches a computed value; useCallback caches a function reference.',
           'Both take a dependency array — stale deps = stale cache.',
-          'Don\'t use them everywhere; profile first.',
+          "Don't use them everywhere; profile first.",
         ],
-        why: 'Clear examples of when memoisation helps and when it\'s noise.',
+        why: "Clear examples of when memoisation helps and when it's noise.",
         thumbnail: 'https://img.youtube.com/vi/MFj_S0Nof90/hqdefault.jpg',
+        difficulty: 'intermediate',
+        tags: ['performance', 'memoization', 'hooks'],
+        actionPrompt: 'Check if a child component is wrapped in React.memo before adding useCallback.',
+        qualityScore: 92,
       },
       {
         id: 'c1-5',
@@ -87,6 +121,10 @@ export const FIXTURE_SESSIONS: Session[] = [
           'useEffect is a subscription to a side effect you need to synchronize.',
         ],
         why: 'Visual, interactive explanations that build intuition.',
+        difficulty: 'beginner',
+        tags: ['visual', 'intuition', 'architecture'],
+        actionPrompt: 'Compare a class component side-by-side with its hook equivalent.',
+        qualityScore: 91,
       },
     ],
   },
@@ -97,7 +135,18 @@ export const FIXTURE_SESSIONS: Session[] = [
     intent: 'fix CORS error in Express',
     mode: 'fix',
     timeboxMin: 5,
+    lang: 'en',
     createdAt: '2026-11-02T14:30:00Z',
+    meta: {
+      isFallback: false,
+      totalMinutes: 5,
+      suggestedRefinements: [
+        'Express preflight OPTIONS with credentials',
+        'Vite / Next.js local proxy for CORS',
+        'CORS headers in Vercel serverless functions',
+        'Debugging CORS in browser Network tab',
+      ],
+    },
     cards: [
       {
         id: 'c2-1',
@@ -112,6 +161,10 @@ export const FIXTURE_SESSIONS: Session[] = [
           'For credentials, set { origin: "http://your-frontend", credentials: true }.',
         ],
         why: 'Direct fix with the most common Express CORS patterns.',
+        difficulty: 'beginner',
+        tags: ['express', 'cors', 'quick-fix'],
+        actionPrompt: 'Ensure app.use(cors()) is placed BEFORE your route declarations.',
+        qualityScore: 98,
       },
       {
         id: 'c2-2',
@@ -125,7 +178,11 @@ export const FIXTURE_SESSIONS: Session[] = [
           'origin can be a string, regex, array, or function for dynamic checks.',
           'Preflight (OPTIONS) requests need cors() applied before your routes.',
         ],
-        why: 'The official README for the package you\'re about to install.',
+        why: "The official README for the package you're about to install.",
+        difficulty: 'beginner',
+        tags: ['npm', 'middleware', 'official-docs'],
+        actionPrompt: 'Configure an explicit origin allowlist via environment variables.',
+        qualityScore: 95,
       },
       {
         id: 'c2-3',
@@ -142,6 +199,10 @@ export const FIXTURE_SESSIONS: Session[] = [
         ],
         why: 'Quick mental model of why CORS exists, so the fix makes sense.',
         thumbnail: 'https://img.youtube.com/vi/4KHiSt0oLJ0/hqdefault.jpg',
+        difficulty: 'beginner',
+        tags: ['security', 'http', 'browser'],
+        actionPrompt: 'Inspect the Access-Control-Allow-Origin response header in DevTools.',
+        qualityScore: 94,
       },
       {
         id: 'c2-4',
@@ -155,7 +216,11 @@ export const FIXTURE_SESSIONS: Session[] = [
           'Complex requests (PUT, DELETE, custom headers) trigger an OPTIONS preflight.',
           'Credentials (cookies, auth headers) require explicit opt-in on both sides.',
         ],
-        why: 'The spec-level reference when the quick fix isn\'t enough.',
+        why: "The spec-level reference when the quick fix isn't enough.",
+        difficulty: 'intermediate',
+        tags: ['mdn', 'http-headers', 'preflight'],
+        actionPrompt: 'Check if custom Authorization headers are triggering a preflight OPTIONS call.',
+        qualityScore: 92,
       },
     ],
   },
@@ -166,7 +231,18 @@ export const FIXTURE_SESSIONS: Session[] = [
     intent: 'system design interview prep',
     mode: 'watch',
     timeboxMin: 20,
+    lang: 'en',
     createdAt: '2026-11-03T09:00:00Z',
+    meta: {
+      isFallback: false,
+      totalMinutes: 20,
+      suggestedRefinements: [
+        'Design a distributed rate limiter',
+        'CAP theorem & database sharding trade-offs',
+        'Consistent hashing & Redis caching',
+        'Event-driven microservices with Kafka',
+      ],
+    },
     cards: [
       {
         id: 'c3-1',
@@ -183,6 +259,10 @@ export const FIXTURE_SESSIONS: Session[] = [
         ],
         why: 'The go-to framework video — covers the template interviewers expect.',
         thumbnail: 'https://img.youtube.com/vi/i7twT3x5yv8/hqdefault.jpg',
+        difficulty: 'beginner',
+        tags: ['system-design', 'interviews', 'framework'],
+        actionPrompt: 'Write down the 4-step time allocation for a 45-minute design interview.',
+        qualityScore: 99,
       },
       {
         id: 'c3-2',
@@ -199,6 +279,10 @@ export const FIXTURE_SESSIONS: Session[] = [
         ],
         why: 'Walkthrough of the most commonly asked starter question.',
         thumbnail: 'https://img.youtube.com/vi/fMZMm_0ZhK4/hqdefault.jpg',
+        difficulty: 'intermediate',
+        tags: ['hashing', 'caching', 'url-shortener'],
+        actionPrompt: 'Calculate how many 7-character Base62 URLs can be uniquely generated.',
+        qualityScore: 96,
       },
       {
         id: 'c3-3',
@@ -213,6 +297,10 @@ export const FIXTURE_SESSIONS: Session[] = [
           'Start with the overview, then drill into the topic your interview targets.',
         ],
         why: 'The single most-starred system design resource on GitHub.',
+        difficulty: 'intermediate',
+        tags: ['github', 'scalability', 'reference'],
+        actionPrompt: 'Review the Master-Replica vs Multi-Master replication diagram.',
+        qualityScore: 95,
       },
       {
         id: 'c3-4',
@@ -229,6 +317,10 @@ export const FIXTURE_SESSIONS: Session[] = [
         ],
         why: 'CAP comes up in almost every system design — this is the clearest explanation.',
         thumbnail: 'https://img.youtube.com/vi/BHqjEjzAicY/hqdefault.jpg',
+        difficulty: 'beginner',
+        tags: ['cap-theorem', 'distributed-systems', 'databases'],
+        actionPrompt: 'Decide whether a banking ledger vs a social media likes counter is CP or AP.',
+        qualityScore: 94,
       },
       {
         id: 'c3-5',
@@ -245,6 +337,10 @@ export const FIXTURE_SESSIONS: Session[] = [
         ],
         why: 'Rate limiting is a frequent follow-up question in design interviews.',
         thumbnail: 'https://img.youtube.com/vi/FU4WlwfS3G0/hqdefault.jpg',
+        difficulty: 'intermediate',
+        tags: ['rate-limiter', 'redis', 'api-gateway'],
+        actionPrompt: 'Compare Token Bucket vs Sliding Window Log memory usage.',
+        qualityScore: 93,
       },
       {
         id: 'c3-6',
@@ -259,6 +355,10 @@ export const FIXTURE_SESSIONS: Session[] = [
           'Partitioning: hash for even distribution, range for locality.',
         ],
         why: 'Condensed version of the concepts from the must-read DDIA book.',
+        difficulty: 'advanced',
+        tags: ['ddia', 'storage-engines', 'partitioning'],
+        actionPrompt: 'Identify when an LSM-tree outperforms a B-tree for high-throughput writes.',
+        qualityScore: 92,
       },
       {
         id: 'c3-7',
@@ -268,11 +368,15 @@ export const FIXTURE_SESSIONS: Session[] = [
         url: 'https://interviewing.io/guides/system-design-interview',
         minutes: 6,
         tldr: [
-          'Don\'t jump to the solution — spend 5 minutes on requirements.',
-          'Don\'t over-engineer: start simple, then scale when asked.',
-          'Don\'t forget to discuss trade-offs for every decision.',
+          "Don't jump to the solution — spend 5 minutes on requirements.",
+          "Don't over-engineer: start simple, then scale when asked.",
+          "Don't forget to discuss trade-offs for every decision.",
         ],
-        why: 'Anti-patterns to avoid — learn from other candidates\' failures.',
+        why: "Anti-patterns to avoid — learn from other candidates' failures.",
+        difficulty: 'beginner',
+        tags: ['interview-tips', 'trade-offs', 'strategy'],
+        actionPrompt: 'Practice stating 2 pros and 1 con before proposing any technology in an interview.',
+        qualityScore: 90,
       },
     ],
   },
@@ -289,4 +393,149 @@ export function findFixtureSession(intent: string): Session {
     lower.includes(s.intent.toLowerCase().split(' ')[0])
   );
   return match ?? FIXTURE_SESSIONS[0];
+}
+
+/**
+ * Builds a dynamic, localized offline session tailored to the user's intent,
+ * mode, time-box, and language when the backend API is unreachable.
+ */
+export function buildDynamicOfflineSession(
+  intent: string,
+  mode: Mode = 'learn',
+  timeboxMin: TimeBox = 10,
+  explicitLang?: Language
+): Session {
+  const trimmed = intent.trim();
+  const lang = explicitLang ?? detectIntentLanguage(trimmed);
+  const lower = trimmed.toLowerCase();
+
+  const exactFixture = FIXTURE_SESSIONS.find(
+    (s) =>
+      lower.includes('react') && s.id === 'fix-learn-react-hooks' ||
+      (lower.includes('cors') || lower.includes('express')) && s.id === 'fix-cors-express' ||
+      (lower.includes('system') || lower.includes('design')) && s.id === 'fix-system-design'
+  );
+
+  const baseCards: Card[] = exactFixture
+    ? exactFixture.cards.map((c) => ({ ...c }))
+    : [
+        {
+          id: `off-doc-${Date.now()}-1`,
+          kind: 'doc',
+          title: `${trimmed} — Canonical Reference & Concepts`,
+          source: 'developer.mozilla.org',
+          url: `https://developer.mozilla.org/en-US/search?q=${encodeURIComponent(trimmed)}`,
+          minutes: Math.min(4, timeboxMin),
+          tldr: [
+            `Core architecture, syntax, and official specification for ${trimmed}.`,
+            `Standard patterns recommended for ${mode} workflows.`,
+            `Edge cases and runtime guarantees to keep in mind.`,
+          ],
+          why: `Foundational documentation matching "${trimmed}".`,
+          difficulty: 'beginner',
+          tags: [mode, 'reference', 'offline-ready'],
+          actionPrompt: `Review the primary syntax and write one small test case for ${trimmed}.`,
+          qualityScore: 95,
+        },
+        {
+          id: `off-art-${Date.now()}-2`,
+          kind: 'article',
+          title: `Deep-Dive Guide: Mastering ${trimmed}`,
+          source: 'en.wikipedia.org',
+          url: `https://en.wikipedia.org/w/index.php?search=${encodeURIComponent(trimmed)}`,
+          minutes: Math.min(5, timeboxMin),
+          tldr: [
+            `Step-by-step mental model breakdown for ${trimmed}.`,
+            `How to avoid the 3 most common mistakes in production.`,
+            `Practical comparison of trade-offs and alternatives.`,
+          ],
+          why: `Structured synthesis tailored to your ${timeboxMin}-minute ${mode} box.`,
+          difficulty: 'intermediate',
+          tags: [mode, 'deep-dive', 'guide'],
+          actionPrompt: `Summarize the key trade-off of ${trimmed} in your own words.`,
+          qualityScore: 92,
+        },
+        {
+          id: `off-vid-${Date.now()}-3`,
+          kind: 'video',
+          title: `${trimmed} — Fast Visual Overview`,
+          source: 'Fireship',
+          url: `https://www.youtube.com/results?search_query=${encodeURIComponent(trimmed)}`,
+          embedId: 'TNhaISOUy6Q',
+          minutes: Math.min(6, timeboxMin),
+          tldr: [
+            `High-density visual walkthrough of ${trimmed} in action.`,
+            `Real-world code examples and architectural diagrams.`,
+            `Quick checklist to verify your implementation works.`,
+          ],
+          why: `Visual summary to solidify intuition around "${trimmed}".`,
+          thumbnail: 'https://img.youtube.com/vi/TNhaISOUy6Q/hqdefault.jpg',
+          difficulty: 'beginner',
+          tags: [mode, 'video', 'visual'],
+          actionPrompt: `Pause at the architecture overview and trace the data flow.`,
+          qualityScore: 90,
+        },
+      ];
+
+  // Localize bullets if Roman Urdu or Urdu
+  const localizedCards: Card[] = baseCards.map((c) => {
+    if (lang === 'roman-ur') {
+      return {
+        ...c,
+        tldr: [
+          `${c.title} ka bunyadi concept aur mental model asaan Roman Urdu mein.`,
+          `"${trimmed}" ke liye practical steps aur real-world examples.`,
+          `${c.source} ke mutabiq common mistakes se bachne ke behtareen usool.`,
+        ],
+        why: `"${trimmed}" (${mode} mode) ke liye ${c.source} ka high-signal card.`,
+        actionPrompt: `Is card ke 3 points check karein aur apna 1-line note save karein.`,
+      };
+    }
+    if (lang === 'ur') {
+      return {
+        ...c,
+        tldr: [
+          `${c.title} کے بنیادی تصورات اور اہم نکات کا خلاصہ۔`,
+          `"${trimmed}" کے عملی نفاذ اور بہترین طریقوں کی مثالیں۔`,
+          `${c.source} کے مطابق عام غلطیوں سے بچنے کے رہنما اصول۔`,
+        ],
+        why: `"${trimmed}" کے مقصد کو پورا کرنے کے لیے بہترین انتخاب۔`,
+        actionPrompt: `اس کارڈ کے اہم نکات کو اپنے الفاظ میں محفوظ کریں۔`,
+      };
+    }
+    return c;
+  });
+
+  // Fit inside timebox while keeping at least 2 cards
+  const fitted: Card[] = [];
+  let runningMin = 0;
+  for (const card of localizedCards) {
+    if (fitted.length < 2 || runningMin + card.minutes <= timeboxMin + 5) {
+      fitted.push(card);
+      runningMin += card.minutes;
+    }
+  }
+
+  return {
+    id: `offline-${Date.now()}`,
+    intent: trimmed,
+    mode,
+    timeboxMin,
+    lang,
+    cards: fitted,
+    createdAt: new Date().toISOString(),
+    meta: {
+      isFallback: true,
+      isCached: false,
+      providersUsed: ['local_knowledge_engine'],
+      totalMinutes: fitted.reduce((sum, c) => sum + c.minutes, 0),
+      suggestedRefinements: exactFixture?.meta?.suggestedRefinements ?? [
+        `${trimmed} practical examples`,
+        `debug common issues in ${trimmed}`,
+        `${trimmed} official documentation`,
+        `advanced ${trimmed} architecture`,
+      ],
+      notice: 'Offline Smart Deck — curated locally so your intentional session continues uninterrupted.',
+    },
+  };
 }

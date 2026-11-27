@@ -1,4 +1,4 @@
-import type { CardKind, Mode, TimeBox } from '@skip-the-scroll/shared';
+import type { CardKind, DifficultyLevel, Language, Mode } from '@skip-the-scroll/shared';
 
 export interface Candidate {
   id: string;
@@ -9,11 +9,15 @@ export interface Candidate {
   embedId?: string;
   snippet?: string;
   minutes?: number;
+  thumbnail?: string;
+  difficulty?: DifficultyLevel;
+  tags?: string[];
 }
 
 export interface SearchOptions {
   limit?: number;
   mode?: Mode;
+  lang?: Language;
 }
 
 export interface Provider {

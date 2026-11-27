@@ -10,8 +10,21 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
+import { MODES, type Mode } from '@skip-the-scroll/shared';
 import { Colors, Spacing, FontSize, Radius } from '@/constants/theme';
-import { getInsightsData, exportDogfoodStatsJson, type InsightsData } from '@/store/storage';
+import {
+  getInsightsData,
+  exportDogfoodStatsJson,
+  exportStudyGuideMarkdown,
+  type InsightsData,
+} from '@/store/storage';
+
+const MODE_LABELS: Record<Mode, string> = {
+  learn: '📘 Learn',
+  fix: '🛠 Fix',
+  watch: '🎬 Watch',
+  read: '📄 Read',
+};
 
 export default function InsightsScreen() {
   const [selectedDays, setSelectedDays] = useState<number>(7);
@@ -37,6 +50,30 @@ export default function InsightsScreen() {
       Alert.alert('Export Failed', 'Could not open the share sheet. Please try again.');
     }
   };
+
+  const handleExportMarkdown = async () => {
+    try {
+      const md = await exportStudyGuideMarkdown();
+      await Share.share({
+        message: md,
+        title: 'SkipTheScroll_StudyGuide.md',
+      });
+    } catch {
+      Alert.alert('Export Failed', 'Could not share study guide.');
+    }
+  };
+
+  const maxDailyCount = Math.max(
+    1,
+    ...(data?.dailyActivity?.map((d) => d.sessionsStarted) ?? [1])
+  );
+  const totalModeSessions = Math.max(
+    1,
+    Object.values(data?.modeBreakdown ?? { learn: 0, fix: 0, watch: 0, read: 0 }).reduce(
+      (a, b) => a + b,
+      0
+    )
+  );
 
   return (
     <SafeAreaView style={styles.container}>
@@ -80,18 +117,26 @@ export default function InsightsScreen() {
           </Pressable>
         </View>
 
-        {/* Highlight Card: Estimated Minutes Saved */}
+        {/* Highlight Card: Estimated Minutes Saved + Intentionality Score */}
         <View style={styles.highlightCard}>
-          <Text style={styles.highlightNumber}>
-            ~{data?.estimatedMinutesSaved ?? 0}
-          </Text>
-          <Text style={styles.highlightTitle}>Estimated Minutes Saved</Text>
+          <View style={styles.highlightTopRow}>
+            <View style={styles.highlightCol}>
+              <Text style={styles.highlightNumber}>
+                ~{data?.estimatedMinutesSaved ?? 0}
+              </Text>
+              <Text style={styles.highlightTitle}>Estimated Minutes Saved</Text>
+            </View>
+            <View style={styles.scoreBadgeBox}>
+              <Text style={styles.scoreValue}>{data?.intentionalityScore ?? 100}%</Text>
+              <Text style={styles.scoreLabel}>Intentionality</Text>
+            </View>
+          </View>
           <Text style={styles.highlightFootnote}>
             *Labelled as an estimate: calculated from scrolls redirected away from infinite feeds and intentional sessions finished.
           </Text>
         </View>
 
-        {/* Metrics Grid */}
+        {/* Primary Metrics Grid */}
         <View style={styles.grid}>
           {/* Card 1: Sessions Done Rate */}
           <View style={styles.gridItem}>
@@ -127,6 +172,71 @@ export default function InsightsScreen() {
           </View>
         </View>
 
+        {/* 7-Day Activity Sparkline Chart */}
+        {data?.dailyActivity && (
+          <View style={styles.sectionCard}>
+            <Text style={styles.sectionTitle}>7-Day Intentional Rhythm</Text>
+            <Text style={styles.sectionSubtitle}>
+              Daily finite sessions started and finished (no streak penalties)
+            </Text>
+            <View style={styles.chartRow}>
+              {data.dailyActivity.map((pt) => {
+                const heightPct = Math.max(12, Math.round((pt.sessionsStarted / maxDailyCount) * 100));
+                return (
+                  <View key={pt.isoDate} style={styles.barCol}>
+                    <Text style={styles.barCountText}>{pt.sessionsStarted}</Text>
+                    <View style={styles.barTrack}>
+                      <View
+                        style={[
+                          styles.barFill,
+                          { height: `${heightPct}%` },
+                          pt.sessionsStarted === 0 && styles.barFillEmpty,
+                        ]}
+                      />
+                    </View>
+                    <Text style={styles.barDayLabel}>{pt.dateLabel}</Text>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* Mode Distribution & Mastery Breakdown */}
+        <View style={styles.sectionCard}>
+          <Text style={styles.sectionTitle}>Intent Mode Distribution</Text>
+          <View style={styles.modeList}>
+            {MODES.map((m) => {
+              const count = data?.modeBreakdown?.[m] ?? 0;
+              const pct = Math.round((count / totalModeSessions) * 100);
+              return (
+                <View key={m} style={styles.modeRow}>
+                  <View style={styles.modeLabelRow}>
+                    <Text style={styles.modeName}>{MODE_LABELS[m]}</Text>
+                    <Text style={styles.modeCount}>{count} sessions</Text>
+                  </View>
+                  <View style={styles.modeBarTrack}>
+                    <View style={[styles.modeBarFill, { width: `${Math.max(4, pct)}%` }]} />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+
+          <View style={styles.masteryRow}>
+            <View style={styles.masteryPill}>
+              <Text style={styles.masteryNum}>{data?.totalTakeawaysChecked ?? 0}</Text>
+              <Text style={styles.masteryText}>Takeaways Checked ✓</Text>
+            </View>
+            <View style={styles.masteryPill}>
+              <Text style={styles.masteryNum}>
+                {data?.completedCardsCount ?? 0}/{data?.savedCardsCount ?? 0}
+              </Text>
+              <Text style={styles.masteryText}>Saved Cards Reviewed</Text>
+            </View>
+          </View>
+        </View>
+
         {/* Principles Reminder */}
         <View style={styles.calmCard}>
           <Text style={styles.calmTitle}>Ethical Metrics</Text>
@@ -135,9 +245,15 @@ export default function InsightsScreen() {
           </Text>
         </View>
 
-        {/* Export JSON Button for Dogfood Study */}
+        {/* Export Buttons for Dogfood Study & Study Guide */}
         <Pressable style={styles.exportBtn} onPress={handleExport}>
           <Text style={styles.exportBtnText}>📤  Export Dogfood Study Data (JSON)</Text>
+        </Pressable>
+
+        <Pressable style={styles.exportSecondaryBtn} onPress={handleExportMarkdown}>
+          <Text style={styles.exportSecondaryBtnText}>
+            📝  Export Saved Library Study Guide (Markdown)
+          </Text>
         </Pressable>
       </ScrollView>
     </SafeAreaView>
@@ -201,30 +317,54 @@ const styles = StyleSheet.create({
   highlightCard: {
     backgroundColor: Colors.surface,
     borderRadius: Radius.md,
-    padding: Spacing.xl,
-    alignItems: 'center',
+    padding: Spacing.lg,
     marginBottom: Spacing.lg,
     borderWidth: 1,
-    borderColor: Colors.border,
+    borderColor: Colors.borderAccent,
+  },
+  highlightTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.sm,
+  },
+  highlightCol: {
+    flex: 1,
   },
   highlightNumber: {
     color: Colors.accent,
-    fontSize: 56,
+    fontSize: 48,
     fontWeight: '800',
-    marginBottom: Spacing.xs,
   },
   highlightTitle: {
     color: Colors.text,
-    fontSize: FontSize.lg,
+    fontSize: FontSize.md,
     fontWeight: '700',
-    marginBottom: Spacing.xs,
+  },
+  scoreBadgeBox: {
+    backgroundColor: Colors.accentDim,
+    borderRadius: Radius.md,
+    paddingHorizontal: Spacing.md,
+    paddingVertical: Spacing.sm + 2,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: Colors.accent,
+  },
+  scoreValue: {
+    color: Colors.accent,
+    fontSize: FontSize.xl,
+    fontWeight: '800',
+  },
+  scoreLabel: {
+    color: Colors.textSecondary,
+    fontSize: FontSize.xs,
+    fontWeight: '600',
   },
   highlightFootnote: {
     color: Colors.textSecondary,
-    fontSize: FontSize.sm,
-    textAlign: 'center',
+    fontSize: FontSize.xs,
     fontStyle: 'italic',
-    lineHeight: FontSize.sm * 1.3,
+    lineHeight: FontSize.xs * 1.4,
   },
   grid: {
     flexDirection: 'row',
@@ -258,14 +398,130 @@ const styles = StyleSheet.create({
   },
   gridSub: {
     color: Colors.textSecondary,
+    fontSize: FontSize.xs,
+    lineHeight: FontSize.xs * 1.35,
+  },
+  sectionCard: {
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.md,
+    padding: Spacing.md,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginBottom: Spacing.lg,
+  },
+  sectionTitle: {
+    color: Colors.text,
+    fontSize: FontSize.md,
+    fontWeight: '700',
+    marginBottom: 2,
+  },
+  sectionSubtitle: {
+    color: Colors.textSecondary,
+    fontSize: FontSize.xs,
+    marginBottom: Spacing.md,
+  },
+  chartRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    height: 112,
+    paddingTop: Spacing.sm,
+  },
+  barCol: {
+    flex: 1,
+    alignItems: 'center',
+    height: '100%',
+    justifyContent: 'flex-end',
+  },
+  barCountText: {
+    color: Colors.textSecondary,
+    fontSize: 11,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  barTrack: {
+    width: 18,
+    height: 64,
+    backgroundColor: Colors.bgElevated,
+    borderRadius: Radius.xs,
+    justifyContent: 'flex-end',
+    overflow: 'hidden',
+  },
+  barFill: {
+    width: '100%',
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.xs,
+  },
+  barFillEmpty: {
+    backgroundColor: Colors.surfaceLight,
+  },
+  barDayLabel: {
+    color: Colors.textMuted,
+    fontSize: 11,
+    marginTop: 6,
+    fontWeight: '600',
+  },
+  modeList: {
+    gap: Spacing.sm,
+    marginTop: Spacing.sm,
+    marginBottom: Spacing.md,
+  },
+  modeRow: {
+    gap: 4,
+  },
+  modeLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modeName: {
+    color: Colors.text,
     fontSize: FontSize.sm,
-    lineHeight: FontSize.sm * 1.3,
+    fontWeight: '600',
+  },
+  modeCount: {
+    color: Colors.textSecondary,
+    fontSize: FontSize.xs,
+  },
+  modeBarTrack: {
+    height: 6,
+    backgroundColor: Colors.bgElevated,
+    borderRadius: Radius.pill,
+    overflow: 'hidden',
+  },
+  modeBarFill: {
+    height: '100%',
+    backgroundColor: Colors.accent,
+    borderRadius: Radius.pill,
+  },
+  masteryRow: {
+    flexDirection: 'row',
+    gap: Spacing.sm,
+    paddingTop: Spacing.sm,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border,
+  },
+  masteryPill: {
+    flex: 1,
+    backgroundColor: Colors.bgElevated,
+    borderRadius: Radius.sm,
+    padding: Spacing.sm,
+    alignItems: 'center',
+  },
+  masteryNum: {
+    color: Colors.accent,
+    fontSize: FontSize.lg,
+    fontWeight: '800',
+  },
+  masteryText: {
+    color: Colors.textSecondary,
+    fontSize: FontSize.xs,
+    marginTop: 2,
   },
   calmCard: {
     backgroundColor: Colors.surfaceLight,
     borderRadius: Radius.md,
     padding: Spacing.md,
-    marginBottom: Spacing.xl,
+    marginBottom: Spacing.lg,
     borderLeftWidth: 3,
     borderLeftColor: Colors.accent,
   },
@@ -286,10 +542,24 @@ const styles = StyleSheet.create({
     borderRadius: Radius.md,
     paddingVertical: Spacing.md,
     alignItems: 'center',
+    marginBottom: Spacing.sm,
   },
   exportBtnText: {
     color: Colors.accent,
     fontSize: FontSize.md,
     fontWeight: '700',
+  },
+  exportSecondaryBtn: {
+    borderWidth: 1,
+    borderColor: Colors.border,
+    backgroundColor: Colors.surface,
+    borderRadius: Radius.md,
+    paddingVertical: Spacing.md,
+    alignItems: 'center',
+  },
+  exportSecondaryBtnText: {
+    color: Colors.text,
+    fontSize: FontSize.sm,
+    fontWeight: '600',
   },
 });

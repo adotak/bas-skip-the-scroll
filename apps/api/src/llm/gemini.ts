@@ -1,9 +1,10 @@
 import fs from 'fs';
 import path from 'path';
 import { GoogleGenAI } from '@google/genai';
-import type { Card, Mode, TimeBox } from '@skip-the-scroll/shared';
+import type { Card, Language, Mode, TimeBox } from '@skip-the-scroll/shared';
 import type { Candidate } from '../types';
 import type { LLMClient } from './client';
+import { buildFallbackCards } from '../providers/curatedKnowledge';
 
 export class GeminiLLMClient implements LLMClient {
   private client: GoogleGenAI | null = null;
@@ -27,14 +28,15 @@ export class GeminiLLMClient implements LLMClient {
     );
   }
 
-  async normalise(intent: string, mode: Mode): Promise<string[]> {
+  async normalise(intent: string, mode: Mode, lang: Language = 'en'): Promise<string[]> {
     if (!this.client) {
       return this.fallbackNormalise(intent);
     }
 
     const prompt = this.normalisePromptTemplate
       .replace('{{intent}}', intent)
-      .replace('{{mode}}', mode);
+      .replace('{{mode}}', mode)
+      .replace(/\{\{lang\}\}/g, lang);
 
     try {
       const response = await this.client.models.generateContent({
@@ -61,20 +63,22 @@ export class GeminiLLMClient implements LLMClient {
     intent: string,
     mode: Mode,
     timeboxMin: TimeBox,
-    candidates: Candidate[]
+    candidates: Candidate[],
+    lang: Language = 'en'
   ): Promise<Card[]> {
     if (candidates.length === 0) {
       return [];
     }
 
     if (!this.client) {
-      return this.fallbackRankAndSummarise(intent, candidates, timeboxMin);
+      return buildFallbackCards(intent, mode, timeboxMin, candidates, lang);
     }
 
     const prompt = this.rankSummarisePromptTemplate
       .replace('{{intent}}', intent)
       .replace('{{mode}}', mode)
       .replace('{{timeboxMin}}', String(timeboxMin))
+      .replace(/\{\{lang\}\}/g, lang)
       .replace('{{candidatesJson}}', JSON.stringify(candidates, null, 2));
 
     try {
@@ -95,45 +99,18 @@ export class GeminiLLMClient implements LLMClient {
       console.warn('[GeminiLLMClient] Rank & summarise failed, using fallback:', (err as Error).message);
     }
 
-    return this.fallbackRankAndSummarise(intent, candidates, timeboxMin);
+    return buildFallbackCards(intent, mode, timeboxMin, candidates, lang);
   }
 
   private fallbackNormalise(intent: string): string[] {
     const cleaned = intent
       .replace(/^(how to|how do i|please help me|i want to|can you|explain)\s+/i, '')
+      .replace(/\b(kaise|kya|kyun|kahan|karna|karte|hain|hai|aur|mein|se|ko|ka|ki|ke|seekhein|samjhao|masla|theek|karein|batao)\b/gi, ' ')
+      .replace(/\s+/g, ' ')
       .replace(/[?!.]+$/, '')
       .trim();
 
-    return [cleaned || intent];
-  }
-
-  private fallbackRankAndSummarise(
-    intent: string,
-    candidates: Candidate[],
-    timeboxMin: TimeBox
-  ): Card[] {
-    // Deterministic fallback curation: take up to 7 candidates
-    const selected = candidates.slice(0, 7);
-
-    return selected.map((c, index): Card => {
-      const snippet = c.snippet || c.title;
-      const sentences = snippet.split(/[.?!]\s+/).filter(Boolean);
-
-      const b1 = sentences[0] || `Key concepts and overview of ${c.title}.`;
-      const b2 = sentences[1] || `Practical application and techniques matching ${intent}.`;
-      const b3 = sentences[2] || `Direct source reference provided by ${c.source}.`;
-
-      return {
-        id: c.id,
-        kind: c.kind,
-        title: c.title,
-        source: c.source,
-        url: c.url,
-        embedId: c.embedId,
-        minutes: Math.min(c.minutes || (c.kind === 'video' ? 10 : 5), timeboxMin),
-        tldr: [b1, b2, b3],
-        why: `Direct match for "${intent}" from ${c.source}.`,
-      };
-    });
+    const primary = cleaned || intent.trim();
+    return [primary];
   }
 }
