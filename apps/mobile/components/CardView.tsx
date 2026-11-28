@@ -72,12 +72,13 @@ export const CardView = memo(function CardView({
         if (!mounted) return;
         setCheckedBullets(takeaways);
         setNoteText(savedNote);
+        onTakeawayChange?.(card.id, takeaways.length);
       }
     );
     return () => {
       mounted = false;
     };
-  }, [card.id]);
+  }, [card.id, onTakeawayChange]);
 
   const handleToggleBullet = async (idx: number) => {
     const updated = await toggleCardTakeaway(card.id, idx);
@@ -122,6 +123,7 @@ export const CardView = memo(function CardView({
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
         nestedScrollEnabled
+        keyboardShouldPersistTaps="handled"
       >
         <View style={styles.cardAcademy}>
           {/* Figure Rollover Media Header (.card-academy__figure) */}
@@ -436,7 +438,10 @@ export const CardView = memo(function CardView({
           </View>
 
           {!showLiveWebInReader ? (
-            <ScrollView contentContainerStyle={styles.readerDigestScroll}>
+            <ScrollView
+              contentContainerStyle={styles.readerDigestScroll}
+              keyboardShouldPersistTaps="handled"
+            >
               <Text style={styles.readerHeadline}>{card.title}</Text>
               <Text style={styles.readerMetaLine}>
                 {card.source} · {card.minutes} min estimated read
@@ -486,6 +491,7 @@ export const CardView = memo(function CardView({
 const styles = StyleSheet.create({
   scroll: {
     flex: 1,
+    minHeight: 0,
   },
   container: {
     paddingHorizontal: Spacing.lg,

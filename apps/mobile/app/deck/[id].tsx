@@ -325,6 +325,7 @@ const styles = StyleSheet.create({
   },
   page: {
     flex: 1,
+    minHeight: 0,
   },
   floatingDockOuter: {
     position: 'absolute',
