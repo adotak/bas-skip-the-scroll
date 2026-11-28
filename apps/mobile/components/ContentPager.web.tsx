@@ -23,18 +23,18 @@ export default function ContentPager({
   activePage,
   onPageSelected,
 }: ContentPagerProps) {
-  const [pageWidth, setPageWidth] = useState(0);
+  const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
   const scrollRef = useRef<ScrollView | null>(null);
 
   useEffect(() => {
-    if (typeof activePage === 'number' && pageWidth > 0 && scrollRef.current) {
-      scrollRef.current.scrollTo({ x: activePage * pageWidth, y: 0, animated: true });
+    if (typeof activePage === 'number' && pageSize.width > 0 && scrollRef.current) {
+      scrollRef.current.scrollTo({ x: activePage * pageSize.width, y: 0, animated: true });
     }
-  }, [activePage, pageWidth]);
+  }, [activePage, pageSize.width]);
 
   const handleScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (pageWidth > 0) {
-      onPageSelected(Math.round(event.nativeEvent.contentOffset.x / pageWidth));
+    if (pageSize.width > 0) {
+      onPageSelected(Math.round(event.nativeEvent.contentOffset.x / pageSize.width));
     }
   };
 
@@ -46,13 +46,26 @@ export default function ContentPager({
       directionalLockEnabled
       nestedScrollEnabled
       showsHorizontalScrollIndicator={false}
-      contentOffset={{ x: initialPage * pageWidth, y: 0 }}
+      contentOffset={{ x: initialPage * pageSize.width, y: 0 }}
       onMomentumScrollEnd={handleScrollEnd}
-      onLayout={(event) => setPageWidth(event.nativeEvent.layout.width)}
+      onLayout={(event) =>
+        setPageSize({
+          width: event.nativeEvent.layout.width,
+          height: event.nativeEvent.layout.height,
+        })
+      }
       style={style}
     >
       {React.Children.map(children, (child) => (
-        <View style={{ width: pageWidth || '100%' }}>{child}</View>
+        <View
+          style={{
+            width: pageSize.width || '100%',
+            height: pageSize.height || '100%',
+            minHeight: 0,
+          }}
+        >
+          {child}
+        </View>
       ))}
     </ScrollView>
   );
